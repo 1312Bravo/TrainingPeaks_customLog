@@ -78,7 +78,10 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     dailyStats_lastDate = datetime.datetime(int(daily_log_df.iloc[-1]["Year"]), int(daily_log_df.iloc[-1]["Month"]), int(daily_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
     dailyStats_startDate = np.min([dailyStats_lastDate, datetime.date.today() - datetime.timedelta(days=1)])
     dailyStats_endDate = datetime.date.today() - datetime.timedelta(days=1)
-    dailyStats_dateList = [(dailyStats_startDate + datetime.timedelta(days=i)) for i in range((dailyStats_endDate - dailyStats_startDate).days+1)]
+    if activityStats_startDate < activityStats_endDate:
+        activityStats_dateList = [(activityStats_startDate + datetime.timedelta(days=i)) for i in range((activityStats_endDate - activityStats_startDate).days+1)]
+    else: 
+        activityStats_dateList = []
     
     if dailyStats_dateList:
         for singleDate in dailyStats_dateList:
@@ -108,8 +111,11 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     activityStats_lastDate = datetime.datetime(int(tp_log_df.iloc[-1]["Year"]), int(tp_log_df.iloc[-1]["Month"]), int(tp_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
     activityStats_startDate = np.min([activityStats_lastDate, datetime.date.today() - datetime.timedelta(days=1)])
     activityStats_endDate = datetime.date.today() - datetime.timedelta(days=1)
-    activityStats_dateList = [(activityStats_startDate + datetime.timedelta(days=i)) for i in range((activityStats_endDate - activityStats_startDate).days+1)]
-    
+    if activityStats_startDate < activityStats_endDate:
+        activityStats_dateList = [(activityStats_startDate + datetime.timedelta(days=i)) for i in range((activityStats_endDate - activityStats_startDate).days+1)]
+    else: 
+        activityStats_dateList = []
+
     if activityStats_dateList:
         for singleDate in activityStats_dateList:
             print("~> Single day = {} ...".format(singleDate))
