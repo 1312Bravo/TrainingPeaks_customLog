@@ -150,7 +150,7 @@ def driveReport_allUsers():
 # -----------------------------------------------------
 
 if __name__ == "__main__":
-    print("\nGoGo! ~> {}\n".format(datetime.datetime.now()))
+    print("\nGoGo! ~> {}".format(datetime.datetime.now()))
     driveReport_allUsers()
-    print("\nDone! ~> {}\n".format(datetime.datetime.now()))
+    print("Done! ~> {}\n".format(datetime.datetime.now()))
 
