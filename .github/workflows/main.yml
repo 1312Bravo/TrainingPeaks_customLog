@@ -1,0 +1,31 @@
+name: Run Training Peaks To Excel Drive Daily
+
+on:
+  schedule:
+    - cron: "0 1 * * *"  
+  workflow_dispatch:  
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13.1'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create .env File
+        run: echo "${{ secrets.ENV_VARS }}" > .env
+
+      - name: Create googleDrive_secrets.json
+        run: echo '${{ secrets.GOOGLE_DRIVE_SECRETS }}' > googleDrive_secrets.json
+
+      - name: Run Python Script
+        run: python src/main.py
