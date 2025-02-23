@@ -147,7 +147,7 @@ def driveReport_allUsers():
         ):
 
         print("\n-----------------------------------------------------")
-        print("Working on user {} [{}...] ... {}".format(email, password[:4], datetime.datetime.now()))
+        print("Working on user {} [{}...] ~> {} & {} ... {}".format(email, password[:4], tp_log, daily_log, datetime.datetime.now()))
         print("-----------------------------------------------------\n")
         driveReport_singleUser(email, password, tp_log, daily_log)
         print("\nDone for user {}! ... {}\n".format(email, datetime.datetime.now()))
