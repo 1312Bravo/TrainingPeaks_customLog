@@ -27,5 +27,8 @@ jobs:
       - name: Create googleDrive_secrets.json
         run: echo '${{ secrets.GOOGLE_DRIVE_SECRETS }}' > googleDrive_secrets.json
 
+      - name: Check googleDrive_secrets.json
+        run: cat googleDrive_secrets.json
+
       - name: Run Python Script
         run: python src/main.py
