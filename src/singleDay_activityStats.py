@@ -36,7 +36,7 @@ def singleDay_activityStats(garminClient, selectedDate):
 
             "Aerobic training effect":np.nan,
             "Aerobic training effect message": np.nan,
-            "Anerobic training effect": np.nan,
+            "Anaerobic training effect": np.nan,
             "Anaerobic training effect message": np.nan,
             "Training effect label": np.nan,
             "Training load": np.nan,
@@ -293,7 +293,7 @@ def singleDay_activityStats(garminClient, selectedDate):
 
                 "Aerobic training effect": round(activity_aerobicTrainingEffect,1),
                 "Aerobic training effect message": activity_aerobicTrainingEffectMessage,
-                "Anerobic training effect": round(activity_anaerobicTrainingEffect,1),
+                "Anaerobic training effect": round(activity_anaerobicTrainingEffect,1),
                 "Anaerobic training effect message": activity_anaerobicTrainingEffectMessage,
                 "Training effect label": activity_trainingEffectLabel,
                 "Training load": round(activity_trainingLoad,1),
