@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from helpFunctions import replace_nan_with_empty_string
+from src.help_functions import replace_nan_with_empty_string
 
 def singleDay_dailyStats(garminClient, selectedDate):
 

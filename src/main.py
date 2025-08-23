@@ -12,11 +12,10 @@ import gspread
 import contextlib
 from io import StringIO
 
-import config
-from helpFunctions import import_google_sheet
-from helpFunctions import clean_data 
-from singleDay_dailyStats import singleDay_dailyStats
-from singleDay_activityStats import singleDay_activityStats
+from src import config
+from src import help_functions as hf
+from src.single_day_daily_statistics import singleDay_dailyStats
+from src.single_day_activity_statistics import singleDay_activityStats
 
 def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_dailyLogFilename):
 
@@ -51,7 +50,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     # Daily Logs
     print("\n2. Opening and preparing Daily Log file ...")
     try:
-        daily_log_df, daily_log_sheet = import_google_sheet(googleDrive_client=googleDrive_client, filename=user_dailyLogFilename, sheet_index=0)
+        daily_log_df, daily_log_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=user_dailyLogFilename, sheet_index=0)
         print("~> Daily Log file succesfully imported and available for formating! :)")
     except Exception as e:
         print("Error opening Daily Log: {}".format(e))
@@ -59,7 +58,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     # TP Logs
     print("\n3. Opening and preparing TP Log file ...")
     try:
-        tp_log_df, tp_log_sheet = import_google_sheet(googleDrive_client=googleDrive_client, filename=user_tpLogFilename, sheet_index=0)
+        tp_log_df, tp_log_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=user_tpLogFilename, sheet_index=0)
         print("~> TP Log file succesfully imported and available for formating! :)")
     except Exception as e:
         print("Error opening TP Log: {}".format(e))
@@ -90,7 +89,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
             if not daily_log_sheet.row_values(1):
                 daily_log_sheet.insert_row(config.DAILY_LOG_EXPECTED_HEADERS, index=1)
             with contextlib.redirect_stdout(StringIO()):
-                daily_log_raw = clean_data(singleDay_dailyStats_dict)
+                daily_log_raw = hf.clean_data(singleDay_dailyStats_dict)
                 daily_log_df = pd.DataFrame([daily_log_raw])
                 daily_log_sheetFormat = daily_log_df.values.tolist()
                 daily_log_sheet.append_rows(daily_log_sheetFormat)  
@@ -124,7 +123,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
                 tp_log_sheet.insert_row(config.TP_LOG_EXPECTED_HEADERS, index=1)
             for i in reversed(range(len(singleDay_activityStats_dict))):
                 with contextlib.redirect_stdout(StringIO()):
-                    tp_log_raw = clean_data(singleDay_activityStats_dict["activity_{}".format(i)])
+                    tp_log_raw = hf.clean_data(singleDay_activityStats_dict["activity_{}".format(i)])
                     tp_log_df = pd.DataFrame([tp_log_raw])
                     tp_log_sheetFormat = tp_log_df.values.tolist()
                     tp_log_sheet.append_rows(tp_log_sheetFormat)
