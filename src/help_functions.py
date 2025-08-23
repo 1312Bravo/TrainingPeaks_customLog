@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
 from typing import Tuple
-import gspread
+from gspread.worksheet import Worksheet 
 
 # Helps ~ Import Google sheet to DataFrame (return dataframe and sheet object for further use)
-def import_google_sheet(googleDrive_client, filename, sheet_index=0) -> Tuple[pd.DataFrame, gspread.models.Worksheet]:
+def import_google_sheet(googleDrive_client, filename, sheet_index=0) -> Tuple[pd.DataFrame, Worksheet]:
     
     file = googleDrive_client.open(filename)
     sheet = file.get_worksheet(sheet_index)
