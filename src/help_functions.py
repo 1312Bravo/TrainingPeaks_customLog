@@ -14,7 +14,7 @@ def import_google_sheet(googleDrive_client, filename, sheet_index=0) -> Tuple[pd
     return dataframe, sheet
 
 # Convert columns to numeric if possible (all are object ...)
-def safe_convert(x):
+def safe_convert_to_numeric(x):
     if x == "":
         return np.nan  # Treat empty strings as NaN
     try:
