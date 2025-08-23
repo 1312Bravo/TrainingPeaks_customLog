@@ -13,6 +13,7 @@ import contextlib
 from io import StringIO
 
 import config
+from helpFunctions import import_google_sheet
 from helpFunctions import clean_data 
 from singleDay_dailyStats import singleDay_dailyStats
 from singleDay_activityStats import singleDay_activityStats
@@ -50,10 +51,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     # Daily Logs
     print("\n2. Opening and preparing Daily Log file ...")
     try:
-        daily_log_file = googleDrive_client.open(user_dailyLogFilename)
-        daily_log_sheet = daily_log_file.get_worksheet(0)
-        daily_log_data = daily_log_sheet.get_all_values()
-        daily_log_df = pd.DataFrame(daily_log_data[1:], columns=daily_log_data[0]) 
+        daily_log_df, daily_log_sheet = import_google_sheet(googleDrive_client=googleDrive_client, filename=user_dailyLogFilename, sheet_index=0)
         print("~> Daily Log file succesfully imported and available for formating! :)")
     except Exception as e:
         print("Error opening Daily Log: {}".format(e))
@@ -61,10 +59,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     # TP Logs
     print("\n3. Opening and preparing TP Log file ...")
     try:
-        tp_log_file = googleDrive_client.open(user_tpLogFilename)
-        tp_log_sheet = tp_log_file.get_worksheet(0)
-        tp_log_data = tp_log_sheet.get_all_values()
-        tp_log_df = pd.DataFrame(tp_log_data[1:], columns=tp_log_data[0]) 
+        tp_log_df, tp_log_sheet = import_google_sheet(googleDrive_client=googleDrive_client, filename=user_tpLogFilename, sheet_index=0)
         print("~> TP Log file succesfully imported and available for formating! :)")
     except Exception as e:
         print("Error opening TP Log: {}".format(e))
