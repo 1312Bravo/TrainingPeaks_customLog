@@ -12,10 +12,10 @@ import gspread
 import contextlib
 from io import StringIO
 
-from src import config
-from src import help_functions as hf
-from src.single_day_daily_statistics import singleDay_dailyStats
-from src.single_day_activity_statistics import singleDay_activityStats
+import config
+import help_functions as hf
+from single_day_daily_statistics import singleDay_dailyStats
+from single_day_activity_statistics import singleDay_activityStats
 
 def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_dailyLogFilename):
 
