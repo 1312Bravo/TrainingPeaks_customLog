@@ -16,11 +16,20 @@ def import_google_sheet(googleDrive_client, filename, sheet_index=0) -> Tuple[pd
 # Convert columns to numeric if possible (all are object ...)
 def safe_convert_to_numeric(x):
     if x == "":
-        return np.nan  # Treat empty strings as NaN
+        return np.nan  
     try:
         return pd.to_numeric(x)
     except (ValueError, TypeError):
         return str(x)
+    
+def data_safe_convert_to_numeric(df):
+    for col in df.columns:
+        try:
+            df[col] = df[col].apply(safe_convert_to_numeric)
+        except ValueError:
+            pass 
+
+    return df
 
 # Write to Google Sheets
 def replace_nan_with_empty_string(obj):
