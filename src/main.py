@@ -50,7 +50,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     # Daily Logs
     print("\n2. Opening and preparing Daily Log file ...")
     try:
-        daily_log_df, daily_log_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=user_dailyLogFilename, sheet_index=0)
+        daily_log_df, daily_log_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=user_dailyLogFilename, sheet_name="Raw Daily Data")
         print("~> Daily Log file succesfully imported and available for formating! :)")
     except Exception as e:
         print("Error opening Daily Log: {}".format(e))
@@ -58,7 +58,7 @@ def driveReport_singleUser(user_email, user_password, user_tpLogFilename, user_d
     # TP Logs
     print("\n3. Opening and preparing TP Log file ...")
     try:
-        tp_log_df, tp_log_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=user_tpLogFilename, sheet_index=0)
+        tp_log_df, tp_log_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=user_tpLogFilename, sheet_name="Raw Training Data")
         print("~> TP Log file succesfully imported and available for formating! :)")
     except Exception as e:
         print("Error opening TP Log: {}".format(e))

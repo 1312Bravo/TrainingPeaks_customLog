@@ -25,23 +25,25 @@ HASTRL_WEIGHT_B2 = 0.45
 HASTRL_WEIGHT_B3 = 0.4
 QUANTILE_LOW = 0.60,
 QUANTILE_HIGH = 0.85,
-AGG_METRIC = "Training load"
+AGG_VARIABLE = "Training load"
+AGG_VARIABLE_NAME_DICT = {"Training load": "TL"}
 
 # Column names mapping
 column_names_excel_internal_mapping = {
-    "Baseline B1 TL": "baseline_b1_TrainingLoad_weighted_mean",
-    "Baseline B2 TL": "baseline_b2_TrainingLoad_weighted_mean",
-    "Baseline B3 TL": "baseline_b3_TrainingLoad_weighted_mean",
-    "Recent B1 TL": "recent_b1_TrainingLoad_weighted_mean",
-    "Recent B2 TL": "recent_b2_TrainingLoad_weighted_mean",
-    "Recent B3 TL": "recent_b3_TrainingLoad_weighted_mean"
+    f"Aggregate variable": "agg_var",
+    # f"Baseline B1 {}": f"baseline_b1_{}_weighted_mean",
+    # f"Baseline B2 {}": f"baseline_b2_{}_weighted_mean",
+    # f"Baseline B3 {}": f"baseline_b3_{}_weighted_mean",
+    # f"Recent B1 {}": f"recent_b1_{}_weighted_mean",
+    # f"Recent B2 {}": f"recent_b2_{}_weighted_mean",
+    # f"Recent B3 {}": f"recent_b3_{}_weighted_mean"
 }
 column_names_internal_excel_mapping = {value: key for key, value in column_names_excel_internal_mapping.items()}
 
 # Get data
 googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
-training_data, _ = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_index=0)
-hastrl_data, _ = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_index=1)
+training_data, _ = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name="Raw Training Data")
+hastrl_data, _ = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name="HASR-TL")
 
 # "Clean" data
 training_data = hf.data_safe_convert_to_numeric(training_data)
@@ -68,11 +70,11 @@ if last_date_hastrl_data < last_date_training_data:
     
 # Prepare data for calculations
 training_data["Datetime"] = pd.to_datetime(training_data[["Year", "Month", "Day"]])
-training_data = training_data.sort_values(by="Date").reset_index(drop=True)
+training_data = training_data.sort_values(by="Datetime").reset_index(drop=True)
 tl_data = (
     training_data
     .groupby("Datetime")
-    .agg({AGG_METRIC: "sum"})
+    .agg({AGG_VARIABLE: "sum"})
     .reset_index()
 )
 
@@ -90,13 +92,17 @@ recent_window_normalized_weights = recent_window_weights / sum(recent_window_wei
 # -------------------------------
 
 # Define parameters
-df = tl_data
+base_data = tl_data
+hastrl_data = hastrl_data
 baseline_window = BASELINE_WINDOW
 baseline_weights = baseline_window_normalized_weights
 recent_window = RECENT_WINDOW
 recent_weights = recent_window_normalized_weights
 quantile_low = QUANTILE_LOW
 quantile_high = QUANTILE_HIGH
-agg_metric = AGG_METRIC
+agg_variable = AGG_VARIABLE
+
+# Go, calculate
+
 
 print("AA")
