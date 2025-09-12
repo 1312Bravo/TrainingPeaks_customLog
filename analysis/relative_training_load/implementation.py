@@ -11,6 +11,8 @@ if repo_root not in sys.path:
 import pandas as pd
 import numpy as np
 import gspread
+import contextlib
+from io import StringIO
 
 from src import config
 from src import help_functions as hf
@@ -31,7 +33,7 @@ AGG_VARIABLE_NAME_DICT = {
     }
 
 # Excel column names
-BASELINE_SLA_COLUMN_NAMES = [
+BASELINE_SLA_VALUE_COLUMN_NAMES = [
      f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
      f"Baseline B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
      f"Baseline B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"
@@ -43,7 +45,7 @@ BASELINE_SLA_PROPORTION_COLUMN_NAMES = [
      f"Baseline B3 prop. [%]"
      ]
 
-RECENT_SLA_COLUMN_NAMES = [
+RECENT_SLA_VALUE_COLUMN_NAMES = [
      f"Recent B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
      f"Recent B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
      f"Recent B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"
@@ -55,42 +57,21 @@ RECENT_SLA_PROPORTION_COLUMN_NAMES = [
      f"Recent B3 prop. [%]"
      ]
 
-
-REQUIRED_COLUMNS_ORDER = []
+REQUIRED_COLUMNS_ORDER = ["Year", "Month", "Day", "Aggregate variable"]
 for i in [0,1,2]:
-     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_COLUMN_NAMES[i]]
+     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_VALUE_COLUMN_NAMES[i]]
      REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_PROPORTION_COLUMN_NAMES[i]]
-     REQUIRED_COLUMNS_ORDER += [RECENT_SLA_COLUMN_NAMES[i]]
+     REQUIRED_COLUMNS_ORDER += [RECENT_SLA_VALUE_COLUMN_NAMES[i]]
      REQUIRED_COLUMNS_ORDER += [RECENT_SLA_PROPORTION_COLUMN_NAMES[i]]
 
 # Get data
 googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
-training_data, _ = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name="Raw Training Data")
-hasr_tl_data, _ = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name=f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}")
+training_data_raw, training_data_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name="Raw Training Data")
+hasr_tl_data_raw, hasr_tl_data_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name=f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}")
 
 # "Clean" data
-training_data = hf.data_safe_convert_to_numeric(training_data)
-hasr_tl_data = hf.data_safe_convert_to_numeric(hasr_tl_data)
-
-# Fill HASR-TL data Y-M-D values based on Training data [other columns are nan, what we actually want]
-last_date_training_data = pd.to_datetime(training_data[["Year", "Month", "Day"]]).max()
-last_date_hasr_tl_data = pd.to_datetime(hasr_tl_data[["Year", "Month", "Day"]]).max()
-if last_date_hasr_tl_data < last_date_training_data:
-
-    new_hasr_tl_data_dates = pd.date_range(
-        start = last_date_hasr_tl_data + pd.Timedelta(days=1), 
-        end = last_date_training_data, 
-        freq = "D"
-        )
-    
-    new_hasr_tl_data_rows = pd.DataFrame({
-        "Year": new_hasr_tl_data_dates.year, 
-        "Month": new_hasr_tl_data_dates.month, 
-        "Day": new_hasr_tl_data_dates.day,
-        "Aggregate variable": AGG_VARIABLE
-        })
-    
-    hasr_tl_data = pd.concat([hasr_tl_data, new_hasr_tl_data_rows], ignore_index = True)
+training_data = hf.data_safe_convert_to_numeric(training_data_raw.copy(deep=True))
+hasr_tl_data = hf.data_safe_convert_to_numeric(hasr_tl_data_raw.copy(deep=True))
     
 # Prepare data for calculations
 training_data["Datetime"] = pd.to_datetime(training_data[["Year", "Month", "Day"]])
@@ -103,11 +84,6 @@ tl_data = (
 )
 
 hasr_tl_data["Datetime"] = pd.to_datetime(hasr_tl_data[["Year", "Month", "Day"]])
-
-# Sort by datetime, just to be really sure
-tl_data = tl_data.sort_values("Datetime", ascending=True).reset_index(drop=True)
-hasr_tl_data = hasr_tl_data.sort_values("Datetime", ascending=True).reset_index(drop=True)
-
 
 # Baseline and Recent window weights
 baseline_window_days = range(1, BASELINE_WINDOW+1)
@@ -136,49 +112,47 @@ agg_variable = AGG_VARIABLE
 # Go, calculate
 
 # -------------------------------
-# Check if all columns are present, if not, fill them with NaN 
+# We work based on Datetime
 # -------------------------------
 
-for col in REQUIRED_COLUMNS_ORDER:
-    if col not in hasr_tl_data.columns:
-         hasr_tl_data[col] = np.nan
+base_tl_data = base_tl_data.set_index("Datetime").sort_index()
+hasr_tl_data = hasr_tl_data.set_index("Datetime").sort_index()
 
-hasr_tl_data = hasr_tl_data[
-     ["Datetime", "Year", "Month", "Day"] +
-     ["Aggregate variable"] +
-     REQUIRED_COLUMNS_ORDER
-     ]
+base_tl_data_datetimes = base_tl_data.index
+last_hasr_tl_data_datetime = hasr_tl_data.index.max()
+missing_hasr_tl_data_datetimes = base_tl_data.loc[base_tl_data.index > last_hasr_tl_data_datetime].index
 
 # -------------------------------
-# Calculate missing Baseline SLA 
+# Calculate missing HASR-TL values
 # -------------------------------
-
-missing_baseline_mask = (
-     hasr_tl_data
-     [BASELINE_SLA_COLUMN_NAMES]
-     .isna()
-     .any(axis=1)
-     )
 
 # Fill row by row
-for idx in hasr_tl_data.index[missing_baseline_mask]:
+for date in missing_hasr_tl_data_datetimes:
 
-        first_baseline_row = idx - baseline_window + 1
-        last_baseline_row = idx
+        # Baseline window ~> Baseline window immediately after the recent window
+        first_baseline_date = date - pd.Timedelta(days=recent_window + baseline_window - 1)
+        last_baseline_date = date - pd.Timedelta(days=recent_window)
 
-        # Do we have enough history to calculate baseline buckets values?
-        if (first_baseline_row >= 0):
+        # Recent window ~> Recent window including "date"
+        first_recent_date = date - pd.Timedelta(days=recent_window-1)
+        last_recent_date = date
+
+        # -------------------------------
+        # BASELINE VALUES
+        # -------------------------------
+
+        # We have enough history to calculate baseline buckets values
+        if first_baseline_date in base_tl_data_datetimes:
 
             # Baseline set
             baseline_set = (
                 base_tl_data
-                .loc[first_baseline_row : last_baseline_row, ["Datetime", agg_variable]]
-                .sort_values("Datetime", ascending=False)
-                [agg_variable]
+                .loc[(base_tl_data.index >= first_baseline_date) & (base_tl_data.index <= last_baseline_date), agg_variable]
+                .sort_index(ascending=False)
                 .reset_index(drop=True)
                 )
             
-            # Aggregate variable values & Weights for each bucket
+            # Buckets sets & Weights
             quantile_low_baseline = rtl_hf.weighted_quantile(values=baseline_set, weights=baseline_weights, quantile=quantile_low)
             quantile_high_baseline = rtl_hf.weighted_quantile(values=baseline_set, weights=baseline_weights, quantile=quantile_high)
 
@@ -191,78 +165,110 @@ for idx in hasr_tl_data.index[missing_baseline_mask]:
             b3_baseline_set = baseline_set[baseline_set > quantile_high_baseline]
             b3_baseline_weights = baseline_weights[baseline_set > quantile_high_baseline]
 
-            # Fill selected row baseline buckets values
-            hasr_tl_data.at[idx, BASELINE_SLA_COLUMN_NAMES[0]] = rtl_hf.weighted_mean(b1_baseline_set, b1_baseline_weights)
-            hasr_tl_data.at[idx, BASELINE_SLA_COLUMN_NAMES[1]] = rtl_hf.weighted_mean(b2_baseline_set, b2_baseline_weights)
-            hasr_tl_data.at[idx, BASELINE_SLA_COLUMN_NAMES[2]] = rtl_hf.weighted_mean(b3_baseline_set, b3_baseline_weights)
+            # Aggregate buckets values
+            baseline_b1_value = rtl_hf.weighted_mean(b1_baseline_set, b1_baseline_weights)
+            baseline_b2_value = rtl_hf.weighted_mean(b2_baseline_set, b2_baseline_weights)
+            baseline_b3_value = rtl_hf.weighted_mean(b3_baseline_set, b3_baseline_weights)
 
             # Proportions in each bucket
-            hasr_tl_data.at[idx, BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]] = len(b1_baseline_set)/len(baseline_set)
-            hasr_tl_data.at[idx, BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]] = len(b2_baseline_set)/len(baseline_set)
-            hasr_tl_data.at[idx, BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]] = len(b3_baseline_set)/len(baseline_set)
+            baseline_b1_proportion = len(b1_baseline_set)/len(baseline_set) * 100
+            baseline_b2_proportion = len(b2_baseline_set)/len(baseline_set) * 100
+            baseline_b3_proportion = len(b3_baseline_set)/len(baseline_set) * 100
+        
+        # We do not have enough history to calculate baseline buckets values
+        else:
+            baseline_b1_value = np.nan
+            baseline_b2_value = np.nan
+            baseline_b3_value = np.nan
 
-# -------------------------------
-# Calculate missing Recent SLA 
-# -------------------------------
+            baseline_b1_proportion = np.nan
+            baseline_b2_proportion = np.nan 
+            baseline_b3_proportion = np.nan
+             
 
-missing_recent_mask = (
-     hasr_tl_data
-     [RECENT_SLA_COLUMN_NAMES]
-     .isna()
-     .any(axis=1)
-     )
+        # -------------------------------
+        # RECENT VALUES
+        # -------------------------------
 
-# Fill row by row
-for idx in hasr_tl_data.index[missing_recent_mask]:
+        # We have enough history to calculate recent buckets values
+        if first_recent_date in base_tl_data_datetimes:
 
-        first_recent_row = idx - recent_window + 1
-        last_recent_row = idx
-
-        first_baseline_row_idx = idx - recent_window - baseline_window + 1
-        last_baseline_row_idx = idx - recent_window
-
-        # Do we have enough history to calculate recent buckets values?
-        if (first_baseline_row_idx >= 0):
-
-            # Baseline set and quantiles
-            baseline_set_idx = (
-                base_tl_data
-                .loc[first_baseline_row_idx : last_baseline_row_idx, ["Datetime", agg_variable]]
-                .sort_values("Datetime", ascending=False)
-                [agg_variable]
-                .reset_index(drop=True)
-                )
-            
-            qunatile_low_baseline_idx = rtl_hf.weighted_quantile(values=baseline_set_idx, weights=baseline_weights, quantile=quantile_low)
-            quantile_high_baseline_idx = rtl_hf.weighted_quantile(values=baseline_set_idx, weights=baseline_weights, quantile=quantile_high)
-
-            # Aggregate variable values & Weights for each bucket
+            # Recent set
             recent_set = (
                 base_tl_data
-                .loc[first_recent_row : last_recent_row, ["Datetime", agg_variable]]
-                .sort_values("Datetime", ascending=False)
-                [agg_variable]
+                .loc[(base_tl_data.index >= first_recent_date) & (base_tl_data.index <= last_recent_date), agg_variable]
+                .sort_index(ascending=False)
                 .reset_index(drop=True)
-                )
+            )
 
-            # Values for each bucket
-            b1_recent_set = recent_set[recent_set <= qunatile_low_baseline_idx]
-            b1_recent_weights = recent_weights[recent_set <= qunatile_low_baseline_idx]
+            # Aggregate variable values & Weights for each bucket
+            b1_recent_set = recent_set[recent_set <= quantile_low_baseline]
+            b1_recent_weights = recent_weights[recent_set <= quantile_low_baseline]
 
-            b2_recent_set = recent_set[(recent_set > qunatile_low_baseline_idx) & (recent_set <= quantile_high_baseline_idx)]
-            b2_recent_weights = recent_weights[(recent_set > qunatile_low_baseline_idx) & (recent_set <= quantile_high_baseline_idx)]
+            b2_recent_set = recent_set[(recent_set > quantile_low_baseline) & (recent_set <= quantile_high_baseline)]
+            b2_recent_weights = recent_weights[(recent_set > quantile_low_baseline) & (recent_set <= quantile_high_baseline)]
 
-            b3_recent_set = recent_set[recent_set > quantile_high_baseline_idx]
-            b3_recent_weights = recent_weights[recent_set > quantile_high_baseline_idx]
+            b3_recent_set = recent_set[recent_set > quantile_high_baseline]
+            b3_recent_weights = recent_weights[recent_set > quantile_high_baseline]
 
-            # Weighted means for each bucket
-            hasr_tl_data.at[idx, RECENT_SLA_COLUMN_NAMES[0]] = rtl_hf.weighted_mean(b1_recent_set, b1_recent_weights)
-            hasr_tl_data.at[idx, RECENT_SLA_COLUMN_NAMES[1]] = rtl_hf.weighted_mean(b2_recent_set, b2_recent_weights)
-            hasr_tl_data.at[idx, RECENT_SLA_COLUMN_NAMES[2]] = rtl_hf.weighted_mean(b3_recent_set, b3_recent_weights)
+            # Aggregate buckets values
+            recent_b1_value = rtl_hf.weighted_mean(b1_recent_set, b1_recent_weights)
+            recent_b2_value = rtl_hf.weighted_mean(b2_recent_set, b2_recent_weights)
+            recent_b3_value = rtl_hf.weighted_mean(b3_recent_set, b3_recent_weights)
 
             # Proportions in each bucket
-            hasr_tl_data.at[idx, RECENT_SLA_PROPORTION_COLUMN_NAMES[0]] = len(b1_recent_set)/len(recent_set)
-            hasr_tl_data.at[idx, RECENT_SLA_PROPORTION_COLUMN_NAMES[1]] = len(b2_recent_set)/len(recent_set)
-            hasr_tl_data.at[idx, RECENT_SLA_PROPORTION_COLUMN_NAMES[2]] = len(b3_recent_set)/len(recent_set)
+            recent_b1_proportion = len(b1_recent_set)/len(recent_set) * 100
+            recent_b2_proportion = len(b2_recent_set)/len(recent_set) * 100
+            recent_b3_proportion = len(b3_recent_set)/len(recent_set) * 100
+        
+        # We do not have enough history to calculate recent buckets values
+        else:
+            recent_b1_value = np.nan
+            recent_b2_value = np.nan
+            recent_b3_value = np.nan
 
-print("AA")
+            recent_b1_proportion = np.nan
+            recent_b2_proportion = np.nan
+            recent_b3_proportion = np.nan
+
+        # -------------------------------
+        # ADD NEW ROW
+        # -------------------------------
+
+        # Fill selected row baseline buckets values
+        new_date_hasr_tl_data_row_dict = {
+                "Year": date.year,
+                "Month": date.month,
+                "Day": date.day,
+                "Aggregate variable": agg_variable,
+
+                BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_b1_value, 2),
+                BASELINE_SLA_VALUE_COLUMN_NAMES[1]: round(baseline_b2_value, 2),
+                BASELINE_SLA_VALUE_COLUMN_NAMES[2]: round(baseline_b3_value, 2),
+
+                BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]: round(baseline_b1_proportion, 2),
+                BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]: round(baseline_b2_proportion, 2),
+                BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]: round(baseline_b3_proportion, 2),
+
+                RECENT_SLA_VALUE_COLUMN_NAMES[0]: round(recent_b1_value, 2),
+                RECENT_SLA_VALUE_COLUMN_NAMES[1]: round(recent_b2_value, 2),
+                RECENT_SLA_VALUE_COLUMN_NAMES[2]: round(recent_b3_value, 2),
+
+                RECENT_SLA_PROPORTION_COLUMN_NAMES[0]: round(recent_b1_proportion, 2),
+                RECENT_SLA_PROPORTION_COLUMN_NAMES[1]: round(recent_b2_proportion, 2),
+                RECENT_SLA_PROPORTION_COLUMN_NAMES[2]: round(recent_b3_proportion, 2),
+
+        }
+
+        for col in REQUIRED_COLUMNS_ORDER:
+            if col not in new_date_hasr_tl_data_row_dict:
+                new_date_hasr_tl_data_row_dict[col] = np.nan
+
+        # Write to sheet
+        with contextlib.redirect_stdout(StringIO()):
+            new_date_hasr_tl_data_row_dict = hf.clean_data(new_date_hasr_tl_data_row_dict)
+            new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=REQUIRED_COLUMNS_ORDER)
+            new_date_hasr_tl_data_row_sheet_format = new_date_hasr_tl_data_row.values.tolist()
+            hasr_tl_data_sheet.append_rows(new_date_hasr_tl_data_row_sheet_format)  
+
+
