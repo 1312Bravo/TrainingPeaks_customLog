@@ -114,15 +114,17 @@ agg_variable = AGG_VARIABLE
 
 # Go, calculate
 
-
+# -------------------------------
 # Calculate missing Baseline SLA 
+# -------------------------------
+
 missing_baseline_mask = hasr_tl_data[[
     f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
     f"Baseline B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
     f"Baseline B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"]
     ].isna().any(axis=1)
 
-# Missing -> Fill row by row
+# Fill row by row
 for idx in hasr_tl_data.index[missing_baseline_mask]:
 
         first_baseline_row = idx - baseline_window + 1
@@ -163,5 +165,63 @@ for idx in hasr_tl_data.index[missing_baseline_mask]:
             # hasr_tl_data.at[idx, f"baseline_b2_{variable_name}_proportion"] = len(b2_baseline_set)/len(baseline_set)
             # hasr_tl_data.at[idx, f"baseline_b3_{variable_name}_proportion"] = len(b3_baseline_set)/len(baseline_set)
 
+    
+# -------------------------------
+# Calculate missing Recent SLA 
+# -------------------------------
+
+missing_recent_mask = hasr_tl_data[[
+    f"Recent B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
+    f"Recent B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
+    f"Recent B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"]
+    ].isna().any(axis=1)
+
+# Fill row by row
+for idx in hasr_tl_data.index[missing_recent_mask]:
+
+        first_recent_row = idx - recent_window + 1
+        last_recent_row = idx
+
+        first_baseline_row_idx = idx - recent_window - baseline_window + 1
+        last_baseline_row_idx = idx - recent_window
+
+        # Do we have enough history to calculate recent buckets values?
+        if (first_baseline_row_idx >= 0):
+
+            # Baseline set and quantiles
+            baseline_set_idx = (
+                base_tl_data
+                .loc[first_baseline_row_idx : last_baseline_row_idx, ["Datetime", agg_variable]]
+                .sort_values("Datetime", ascending=False)
+                [agg_variable]
+                .reset_index(drop=True)
+                )
+            
+            qunatile_low_baseline_idx = rtl_hf.weighted_quantile(values=baseline_set_idx, weights=baseline_weights, quantile=quantile_low)
+            quantile_high_baseline_idx = rtl_hf.weighted_quantile(values=baseline_set_idx, weights=baseline_weights, quantile=quantile_high)
+
+            # Aggregate variable values & Weights for each bucket
+            recent_set = (
+                base_tl_data
+                .loc[first_recent_row : last_recent_row, ["Datetime", agg_variable]]
+                .sort_values("Datetime", ascending=False)
+                [agg_variable]
+                .reset_index(drop=True)
+                )
+
+            # Values for each bucket
+            b1_recent_set = recent_set[recent_set <= qunatile_low_baseline_idx]
+            b1_recent_weights = recent_weights[recent_set <= qunatile_low_baseline_idx]
+
+            b2_recent_set = recent_set[(recent_set > qunatile_low_baseline_idx) & (recent_set <= quantile_high_baseline_idx)]
+            b2_recent_weights = recent_weights[(recent_set > qunatile_low_baseline_idx) & (recent_set <= quantile_high_baseline_idx)]
+
+            b3_recent_set = recent_set[recent_set > quantile_high_baseline_idx]
+            b3_recent_weights = recent_weights[recent_set > quantile_high_baseline_idx]
+
+            # Weighted means for each bucket
+            hasr_tl_data.at[idx, f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b1_recent_set, b1_recent_weights)
+            hasr_tl_data.at[idx, f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b2_recent_set, b2_recent_weights)
+            hasr_tl_data.at[idx, f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b3_recent_set, b3_recent_weights)
 
 print("AA")
