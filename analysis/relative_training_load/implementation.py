@@ -30,17 +30,38 @@ AGG_VARIABLE_NAME_DICT = {
     "Training load": "TL"
     }
 
-# Column names mapping
-column_names_excel_internal_mapping = {
-    f"Aggregate variable": "agg_var",
-    f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}": f"baseline_b1_{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}_weighted_mean",
-    f"Baseline B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}": f"baseline_b2_{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}_weighted_mean",
-    f"Baseline B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}": f"baseline_b3_{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}_weighted_mean",
-    f"Recent B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}": f"recent_b1_{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}_weighted_mean",
-    f"Recent B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}": f"recent_b2_{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}_weighted_mean",
-    f"Recent B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}": f"recent_b3_{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}_weighted_mean"
-}
-column_names_internal_excel_mapping = {value: key for key, value in column_names_excel_internal_mapping.items()}
+# Excel column names
+BASELINE_SLA_COLUMN_NAMES = [
+     f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
+     f"Baseline B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
+     f"Baseline B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"
+     ]
+
+BASELINE_SLA_PROPORTION_COLUMN_NAMES = [
+     f"Baseline B1 prop. [%]",
+     f"Baseline B2 prop. [%]",
+     f"Baseline B3 prop. [%]"
+     ]
+
+RECENT_SLA_COLUMN_NAMES = [
+     f"Recent B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
+     f"Recent B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
+     f"Recent B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"
+     ]
+
+RECENT_SLA_PROPORTION_COLUMN_NAMES = [
+     f"Recent B1 prop. [%]",
+     f"Recent B2 prop. [%]",
+     f"Recent B3 prop. [%]"
+     ]
+
+
+REQUIRED_COLUMNS_ORDER = []
+for i in [0,1,2]:
+     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_COLUMN_NAMES[i]]
+     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_PROPORTION_COLUMN_NAMES[i]]
+     REQUIRED_COLUMNS_ORDER += [RECENT_SLA_COLUMN_NAMES[i]]
+     REQUIRED_COLUMNS_ORDER += [RECENT_SLA_PROPORTION_COLUMN_NAMES[i]]
 
 # Get data
 googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
@@ -115,14 +136,29 @@ agg_variable = AGG_VARIABLE
 # Go, calculate
 
 # -------------------------------
+# Check if all columns are present, if not, fill them with NaN 
+# -------------------------------
+
+for col in REQUIRED_COLUMNS_ORDER:
+    if col not in hasr_tl_data.columns:
+         hasr_tl_data[col] = np.nan
+
+hasr_tl_data = hasr_tl_data[
+     ["Datetime", "Year", "Month", "Day"] +
+     ["Aggregate variable"] +
+     REQUIRED_COLUMNS_ORDER
+     ]
+
+# -------------------------------
 # Calculate missing Baseline SLA 
 # -------------------------------
 
-missing_baseline_mask = hasr_tl_data[[
-    f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
-    f"Baseline B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
-    f"Baseline B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"]
-    ].isna().any(axis=1)
+missing_baseline_mask = (
+     hasr_tl_data
+     [BASELINE_SLA_COLUMN_NAMES]
+     .isna()
+     .any(axis=1)
+     )
 
 # Fill row by row
 for idx in hasr_tl_data.index[missing_baseline_mask]:
@@ -156,25 +192,25 @@ for idx in hasr_tl_data.index[missing_baseline_mask]:
             b3_baseline_weights = baseline_weights[baseline_set > quantile_high_baseline]
 
             # Fill selected row baseline buckets values
-            hasr_tl_data.at[idx, f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b1_baseline_set, b1_baseline_weights)
-            hasr_tl_data.at[idx, f"Baseline B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b2_baseline_set, b2_baseline_weights)
-            hasr_tl_data.at[idx, f"Baseline B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b3_baseline_set, b3_baseline_weights)
+            hasr_tl_data.at[idx, BASELINE_SLA_COLUMN_NAMES[0]] = rtl_hf.weighted_mean(b1_baseline_set, b1_baseline_weights)
+            hasr_tl_data.at[idx, BASELINE_SLA_COLUMN_NAMES[1]] = rtl_hf.weighted_mean(b2_baseline_set, b2_baseline_weights)
+            hasr_tl_data.at[idx, BASELINE_SLA_COLUMN_NAMES[2]] = rtl_hf.weighted_mean(b3_baseline_set, b3_baseline_weights)
 
             # Proportions in each bucket
-            # hasr_tl_data.at[idx, f"baseline_b1_{variable_name}_proportion"] = len(b1_baseline_set)/len(baseline_set)
-            # hasr_tl_data.at[idx, f"baseline_b2_{variable_name}_proportion"] = len(b2_baseline_set)/len(baseline_set)
-            # hasr_tl_data.at[idx, f"baseline_b3_{variable_name}_proportion"] = len(b3_baseline_set)/len(baseline_set)
+            hasr_tl_data.at[idx, BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]] = len(b1_baseline_set)/len(baseline_set)
+            hasr_tl_data.at[idx, BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]] = len(b2_baseline_set)/len(baseline_set)
+            hasr_tl_data.at[idx, BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]] = len(b3_baseline_set)/len(baseline_set)
 
-    
 # -------------------------------
 # Calculate missing Recent SLA 
 # -------------------------------
 
-missing_recent_mask = hasr_tl_data[[
-    f"Recent B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
-    f"Recent B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}", 
-    f"Recent B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"]
-    ].isna().any(axis=1)
+missing_recent_mask = (
+     hasr_tl_data
+     [RECENT_SLA_COLUMN_NAMES]
+     .isna()
+     .any(axis=1)
+     )
 
 # Fill row by row
 for idx in hasr_tl_data.index[missing_recent_mask]:
@@ -220,8 +256,13 @@ for idx in hasr_tl_data.index[missing_recent_mask]:
             b3_recent_weights = recent_weights[recent_set > quantile_high_baseline_idx]
 
             # Weighted means for each bucket
-            hasr_tl_data.at[idx, f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b1_recent_set, b1_recent_weights)
-            hasr_tl_data.at[idx, f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b2_recent_set, b2_recent_weights)
-            hasr_tl_data.at[idx, f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"] = rtl_hf.weighted_mean(b3_recent_set, b3_recent_weights)
+            hasr_tl_data.at[idx, RECENT_SLA_COLUMN_NAMES[0]] = rtl_hf.weighted_mean(b1_recent_set, b1_recent_weights)
+            hasr_tl_data.at[idx, RECENT_SLA_COLUMN_NAMES[1]] = rtl_hf.weighted_mean(b2_recent_set, b2_recent_weights)
+            hasr_tl_data.at[idx, RECENT_SLA_COLUMN_NAMES[2]] = rtl_hf.weighted_mean(b3_recent_set, b3_recent_weights)
+
+            # Proportions in each bucket
+            hasr_tl_data.at[idx, RECENT_SLA_PROPORTION_COLUMN_NAMES[0]] = len(b1_recent_set)/len(recent_set)
+            hasr_tl_data.at[idx, RECENT_SLA_PROPORTION_COLUMN_NAMES[1]] = len(b2_recent_set)/len(recent_set)
+            hasr_tl_data.at[idx, RECENT_SLA_PROPORTION_COLUMN_NAMES[2]] = len(b3_recent_set)/len(recent_set)
 
 print("AA")
