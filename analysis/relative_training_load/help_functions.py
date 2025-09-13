@@ -10,7 +10,7 @@ def weighted_quantile(values, weights, quantile):
     cumulative_normalized_weights  = np.cumsum(weights_sorted) / np.sum(weights_sorted)
     quantile_value = np.interp(quantile, cumulative_normalized_weights, values_sorted)
 
-    return quantile_value[0]
+    return quantile_value
 
 # Weighted mean
 def weighted_mean(values, weights):

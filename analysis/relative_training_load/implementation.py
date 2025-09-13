@@ -22,11 +22,9 @@ from analysis.relative_training_load import help_functions as rtl_hf
 BASELINE_WINDOW = 90
 RECENT_WINDOW = 21
 LAMBDA_BASE = 0.978
-hasr_tl_WEIGHT_B1 = 0.15
-hasr_tl_WEIGHT_B2 = 0.45
-hasr_tl_WEIGHT_B3 = 0.4
-QUANTILE_LOW = 0.60,
-QUANTILE_HIGH = 0.85,
+HASR_TL_WEIGHTS = [0.15, 0.45, 0.4]
+QUANTILE_LOW = 0.60
+QUANTILE_HIGH = 0.85
 AGG_VARIABLE = "Training load"
 AGG_VARIABLE_NAME_DICT = {
     "Training load": "TL"
@@ -34,35 +32,63 @@ AGG_VARIABLE_NAME_DICT = {
 
 # Excel column names
 BASELINE_SLA_VALUE_COLUMN_NAMES = [
-     f"Baseline B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
-     f"Baseline B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
-     f"Baseline B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"
+     "Baseline B1",
+     "Baseline B2",
+     "Baseline B3"
      ]
 
 BASELINE_SLA_PROPORTION_COLUMN_NAMES = [
-     f"Baseline B1 prop. [%]",
-     f"Baseline B2 prop. [%]",
-     f"Baseline B3 prop. [%]"
+     "Baseline B1 prop. [%]",
+     "Baseline B2 prop. [%]",
+     "Baseline B3 prop. [%]"
      ]
 
 RECENT_SLA_VALUE_COLUMN_NAMES = [
-     f"Recent B1 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
-     f"Recent B2 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
-     f"Recent B3 {AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"
+     "Recent B1",
+     "Recent B2",
+     "Recent B3"
      ]
 
 RECENT_SLA_PROPORTION_COLUMN_NAMES = [
-     f"Recent B1 prop. [%]",
-     f"Recent B2 prop. [%]",
-     f"Recent B3 prop. [%]"
+     "Recent B1 prop. [%]",
+     "Recent B2 prop. [%]",
+     "Recent B3 prop. [%]"
      ]
 
-REQUIRED_COLUMNS_ORDER = ["Year", "Month", "Day", "Aggregate variable"]
+# Not in use
+BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES = [
+    "Baseline B2/B1",
+    "Baseline B3/B2",
+    "Baseline B3/B1",
+]
+
+# Not in use
+RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES = [
+    "Recent B2/B1",
+    "Recent B3/B2",
+    "Recent B3/B1",
+]
+
+# Not in use
+RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES = [
+     "Recent/Baseline B1",
+     "Recent/Baseline B2",
+     "Recent/Baseline B3",
+]
+
+HASR_TL_COLUMN_NAMES = [
+     f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
+     f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]} Baseline",
+     f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]} Recent",
+]
+
+REQUIRED_COLUMNS_ORDER = ["Year", "Month", "Day", "Weekday", "Aggregate variable"]
+REQUIRED_COLUMNS_ORDER += HASR_TL_COLUMN_NAMES
 for i in [0,1,2]:
-     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_VALUE_COLUMN_NAMES[i]]
-     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_PROPORTION_COLUMN_NAMES[i]]
      REQUIRED_COLUMNS_ORDER += [RECENT_SLA_VALUE_COLUMN_NAMES[i]]
+     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_VALUE_COLUMN_NAMES[i]]
      REQUIRED_COLUMNS_ORDER += [RECENT_SLA_PROPORTION_COLUMN_NAMES[i]]
+     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_PROPORTION_COLUMN_NAMES[i]]
 
 # Get data
 googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
@@ -108,6 +134,13 @@ recent_weights = recent_window_normalized_weights
 quantile_low = QUANTILE_LOW
 quantile_high = QUANTILE_HIGH
 agg_variable = AGG_VARIABLE
+hasrl_tl_weights = HASR_TL_WEIGHTS
+print(f"Baseline window = {baseline_window} \
+      Recent window = {recent_window} \
+      Quantile low = {quantile_low} \
+      Quantile high = {quantile_high} \
+      HASR-TL Weights = {hasrl_tl_weights} \
+")
 
 # Go, calculate
 
@@ -128,14 +161,17 @@ missing_hasr_tl_data_datetimes = base_tl_data.loc[base_tl_data.index > last_hasr
 
 # Fill row by row
 for date in missing_hasr_tl_data_datetimes:
+        print("\nDate = {}".format(date.date()))
 
         # Baseline window ~> Baseline window immediately after the recent window
         first_baseline_date = date - pd.Timedelta(days=recent_window + baseline_window - 1)
         last_baseline_date = date - pd.Timedelta(days=recent_window)
+        print("~> Baseline dates: {} - {}".format(first_baseline_date.date(), last_baseline_date.date()))
 
         # Recent window ~> Recent window including "date"
         first_recent_date = date - pd.Timedelta(days=recent_window-1)
         last_recent_date = date
+        print("~> Recent dates: {} - {}".format(first_recent_date.date(), last_recent_date.date()))
 
         # -------------------------------
         # BASELINE VALUES
@@ -143,6 +179,7 @@ for date in missing_hasr_tl_data_datetimes:
 
         # We have enough history to calculate baseline buckets values
         if first_baseline_date in base_tl_data_datetimes:
+            print("~> Baseline SLA: Calculating SLA and Proportions ...")
 
             # Baseline set
             baseline_set = (
@@ -177,6 +214,8 @@ for date in missing_hasr_tl_data_datetimes:
         
         # We do not have enough history to calculate baseline buckets values
         else:
+            print("~> Baseline SLA: Not enough data avaliable")
+
             baseline_b1_value = np.nan
             baseline_b2_value = np.nan
             baseline_b3_value = np.nan
@@ -185,13 +224,13 @@ for date in missing_hasr_tl_data_datetimes:
             baseline_b2_proportion = np.nan 
             baseline_b3_proportion = np.nan
              
-
         # -------------------------------
         # RECENT VALUES
         # -------------------------------
 
         # We have enough history to calculate recent buckets values
-        if first_recent_date in base_tl_data_datetimes:
+        if (first_recent_date in base_tl_data_datetimes) and (first_baseline_date in base_tl_data_datetimes):
+            print("~> Recent SLA: Calculating SLA and Proportions ...")
 
             # Recent set
             recent_set = (
@@ -223,6 +262,8 @@ for date in missing_hasr_tl_data_datetimes:
         
         # We do not have enough history to calculate recent buckets values
         else:
+            print("~> Recent SLA: Not enough baseline data to calculate quantiles")
+
             recent_b1_value = np.nan
             recent_b2_value = np.nan
             recent_b3_value = np.nan
@@ -230,6 +271,44 @@ for date in missing_hasr_tl_data_datetimes:
             recent_b1_proportion = np.nan
             recent_b2_proportion = np.nan
             recent_b3_proportion = np.nan
+
+        # -------------------------------
+        # BUCKET LEVEL DIAGNOSTICS 
+        # -------------------------------
+
+        print("~> Within Baseline SLA comparison ...")
+        baseline_b2_b1 = baseline_b2_value / baseline_b1_value
+        baseline_b3_b2 = baseline_b3_value / baseline_b2_value
+        baseline_b3_b1 = baseline_b3_value / baseline_b1_value
+
+        print("~> Within Recent SLA comparison ...")
+        recent_b2_b1 = recent_b2_value / recent_b1_value
+        recent_b3_b2 = recent_b3_value / recent_b2_value
+        recent_b3_b1 = recent_b3_value / recent_b1_value
+        
+        #print("~> Recent vs. Baseline Bucket SLA comparison ...")
+        recent_baseline_b1 = recent_b1_value / baseline_b1_value
+        recent_baseline_b2 = recent_b2_value / baseline_b2_value
+        recent_baseline_b3 = recent_b3_value / baseline_b3_value
+
+        # -------------------------------
+        # FINAL HASR-TL 
+        # -------------------------------
+
+        print("~> HASR-TL calculation ...")
+        hasr_tl_baseline = (
+            hasrl_tl_weights[0] * baseline_b1_value + 
+            hasrl_tl_weights[1] * baseline_b2_value +
+            hasrl_tl_weights[2] * baseline_b3_value
+            )
+        
+        hasr_tl_recent = (
+            hasrl_tl_weights[0] * recent_b1_value + 
+            hasrl_tl_weights[1] * recent_b2_value +
+            hasrl_tl_weights[2] * recent_b3_value
+            )
+        
+        hasr_tl = hasr_tl_recent / hasr_tl_baseline
 
         # -------------------------------
         # ADD NEW ROW
@@ -240,6 +319,7 @@ for date in missing_hasr_tl_data_datetimes:
                 "Year": date.year,
                 "Month": date.month,
                 "Day": date.day,
+                "Weekday": date.strftime("%A"),
                 "Aggregate variable": agg_variable,
 
                 BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_b1_value, 2),
@@ -258,6 +338,23 @@ for date in missing_hasr_tl_data_datetimes:
                 RECENT_SLA_PROPORTION_COLUMN_NAMES[1]: round(recent_b2_proportion, 2),
                 RECENT_SLA_PROPORTION_COLUMN_NAMES[2]: round(recent_b3_proportion, 2),
 
+                # Not in use
+                # BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(baseline_b2_b1, 2) if not np.isnan(baseline_b2_b1) else np.nan,
+                # BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(baseline_b3_b2, 2) if not np.isnan(baseline_b3_b2) else np.nan,
+                # BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(baseline_b3_b1, 2) if not np.isnan(baseline_b3_b1) else np.nan,
+
+                # RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_b2_b1, 2) if not np.isnan(recent_b2_b1) else np.nan,
+                # RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_b3_b2, 2) if not np.isnan(recent_b3_b2) else np.nan,
+                # RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_b3_b1, 2) if not np.isnan(recent_b3_b1) else np.nan,
+
+                # RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_baseline_b1, 2) if not np.isnan(recent_baseline_b1) else np.nan,
+                # RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_baseline_b2, 2) if not np.isnan(recent_baseline_b2) else np.nan,
+                # RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_baseline_b3, 2) if not np.isnan(recent_baseline_b3) else np.nan,
+
+                HASR_TL_COLUMN_NAMES[0]: round(hasr_tl, 2) if not np.isnan(hasr_tl) else np.nan,
+                HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_baseline, 2) if not np.isnan(hasr_tl_baseline) else np.nan,
+                HASR_TL_COLUMN_NAMES[2]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,
+
         }
 
         for col in REQUIRED_COLUMNS_ORDER:
@@ -265,6 +362,7 @@ for date in missing_hasr_tl_data_datetimes:
                 new_date_hasr_tl_data_row_dict[col] = np.nan
 
         # Write to sheet
+        print("~> Writing to HASR-TL data to sheet ...")
         with contextlib.redirect_stdout(StringIO()):
             new_date_hasr_tl_data_row_dict = hf.clean_data(new_date_hasr_tl_data_row_dict)
             new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=REQUIRED_COLUMNS_ORDER)
