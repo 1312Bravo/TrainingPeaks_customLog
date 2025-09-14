@@ -3,6 +3,14 @@ import numpy as np
 from typing import Tuple
 from gspread.worksheet import Worksheet 
 
+# Set up repository root path
+def set_up_repo_root_path():
+    import os
+    import sys
+    repo_root = os.path.abspath(os.getcwd())  
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+
 # Helps ~ Import Google sheet to DataFrame (return dataframe and sheet object for further use)
 def import_google_sheet(googleDrive_client, filename, sheet_name) -> Tuple[pd.DataFrame, Worksheet]:
     

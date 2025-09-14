@@ -10,115 +10,45 @@ if repo_root not in sys.path:
 
 import pandas as pd
 import numpy as np
+import datetime
 import gspread
 import contextlib
 from io import StringIO
 
 from src import config
 from src import help_functions as hf
-from analysis.relative_training_load import help_functions as rtl_hf
-# -------------------------------
-# "config"
-# -------------------------------
-
-BASELINE_WINDOW = 90
-RECENT_WINDOW = 21
-LAMBDA_BASE = 0.978
-HASR_TL_WEIGHTS = [0.15, 0.45, 0.4]
-QUANTILE_LOW = 0.60
-QUANTILE_HIGH = 0.85
-AGG_VARIABLE = "Training load"
-AGG_VARIABLE_NAME_DICT = {
-    "Training load": "TL"
-    }
-
-# Excel column names
-BASELINE_SLA_VALUE_COLUMN_NAMES = [
-     "Baseline B1",
-     "Baseline B2",
-     "Baseline B3"
-     ]
-
-BASELINE_SLA_PROPORTION_COLUMN_NAMES = [
-     "Baseline B1 prop. [%]",
-     "Baseline B2 prop. [%]",
-     "Baseline B3 prop. [%]"
-     ]
-
-RECENT_SLA_VALUE_COLUMN_NAMES = [
-     "Recent B1",
-     "Recent B2",
-     "Recent B3"
-     ]
-
-RECENT_SLA_PROPORTION_COLUMN_NAMES = [
-     "Recent B1 prop. [%]",
-     "Recent B2 prop. [%]",
-     "Recent B3 prop. [%]"
-     ]
-
-# Not in use
-BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES = [
-    "Baseline B2/B1",
-    "Baseline B3/B2",
-    "Baseline B3/B1",
-]
-
-# Not in use
-RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES = [
-    "Recent B2/B1",
-    "Recent B3/B2",
-    "Recent B3/B1",
-]
-
-# Not in use
-RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES = [
-     "Recent/Baseline B1",
-     "Recent/Baseline B2",
-     "Recent/Baseline B3",
-]
-
-HASR_TL_COLUMN_NAMES = [
-     f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}",
-     f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]} Baseline",
-     f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]} Recent",
-]
-
-REQUIRED_COLUMNS_ORDER = ["Year", "Month", "Day", "Weekday", "Aggregate variable"]
-REQUIRED_COLUMNS_ORDER += HASR_TL_COLUMN_NAMES
-for i in [0,1,2]:
-     REQUIRED_COLUMNS_ORDER += [RECENT_SLA_VALUE_COLUMN_NAMES[i]]
-     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_VALUE_COLUMN_NAMES[i]]
-     REQUIRED_COLUMNS_ORDER += [RECENT_SLA_PROPORTION_COLUMN_NAMES[i]]
-     REQUIRED_COLUMNS_ORDER += [BASELINE_SLA_PROPORTION_COLUMN_NAMES[i]]
-
-# Baseline and Recent window weights
-baseline_window_days = range(1, BASELINE_WINDOW+1)
-baseline_window_weights = np.array([LAMBDA_BASE ** (j-1) for j in baseline_window_days])
-BASELINE_WINDOW_NORMALIZED_WEIGHTS = baseline_window_weights / sum(baseline_window_weights)
-
-recent_window_days = range(1, RECENT_WINDOW+1)
-recent_window_weights = np.array([LAMBDA_BASE ** (j-1) for j in recent_window_days])
-RECENT_WINDOW_NORMALIZED_WEIGHTS = recent_window_weights / sum(recent_window_weights)
+from analysis.history_aware_relative_stratified_training_load import config as sub_config
+from analysis.history_aware_relative_stratified_training_load import help_functions as rtl_hf
 
 # -------------------------------
-# Prepare data, Calculate HASR-TL values and write to sheet [Full Process] 
+# Main: Prepare data, Calculate HASR-TL values and write to sheet
 # -------------------------------
+def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
+    print("\nRunning: Main ~ Analysis - History Aware Relative Stratified - Training Load... {}".format(datetime.datetime.now()))
 
-def prepare_calculate_write_HASR_TL(
-        agg_variable, 
-        baseline_window, recent_window,
-        baseline_weights, recent_weights,
-        quantile_low, quantile_high,
-        hasrl_tl_weights
-        ):
+    # Define "input parameters"
+    agg_variable = sub_config.AGG_VARIABLE,
+    baseline_window = sub_config.BASELINE_WINDOW,
+    recent_window = sub_config.RECENT_WINDOW,
+    baseline_weights = sub_config.BASELINE_WINDOW_NORMALIZED_WEIGHTS,
+    recent_weights = sub_config.RECENT_WINDOW_NORMALIZED_WEIGHTS,
+    quantile_low = sub_config.QUANTILE_LOW,
+    quantile_high = sub_config.QUANTILE_HIGH,
+    hasrl_tl_weights = sub_config.HASR_TL_WEIGHTS
     
-    print(f"Baseline window = {baseline_window} \
-      Recent window = {recent_window} \
-      Quantile low = {quantile_low} \
-      Quantile high = {quantile_high} \
-      HASR-TL Weights = {hasrl_tl_weights} \
-    ")
+    # About
+    print("About user ~> email: {} ~> activity file name: {}".format(
+        user_email, 
+        user_tpLogFilename, 
+        ))
+    
+    print(f"""
+          Baseline window = {baseline_window} 
+          Recent window = {recent_window} 
+          Quantile low = {quantile_low} 
+          Quantile high = {quantile_high} 
+          HASR-TL Weights = {hasrl_tl_weights}
+        """)
 
     # -------------------------------
     # Get and prepare data
@@ -126,8 +56,26 @@ def prepare_calculate_write_HASR_TL(
 
     # Get data
     googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
-    training_data_raw, _ = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name="Raw Training Data")
-    hasr_tl_data_raw, hasr_tl_data_sheet = hf.import_google_sheet(googleDrive_client=googleDrive_client, filename=config.DRIVE_TP_LOG_FILENAMES[0], sheet_name=f"HASR-{AGG_VARIABLE_NAME_DICT[agg_variable]}")
+
+    print("Opening and preparing TP Log file ...")
+    try:
+        training_data_raw, _ = hf.import_google_sheet(
+            googleDrive_client=googleDrive_client, 
+            filename = user_tpLogFilename, 
+            sheet_name = config.BASIC_ACTIVITY_STATISTICS_SHEET_NAME
+            )
+    except Exception as e:
+        print("Error: {}".format(e))
+    
+    print("Opening and preparing HASR-TL Log file ...")
+    try:
+        hasr_tl_data_raw, hasr_tl_data_sheet = hf.import_google_sheet(
+            googleDrive_client=googleDrive_client, 
+            filename = config.DRIVE_TP_LOG_FILENAMES[0], 
+            sheet_name = sub_config.HASR_TL_SHEET_NAME
+            )
+    except Exception as e:
+        print("Error: {}".format(e))
 
     # "Clean" data
     training_data = hf.data_safe_convert_to_numeric(training_data_raw.copy(deep=True))
@@ -139,7 +87,7 @@ def prepare_calculate_write_HASR_TL(
     base_tl_data = (
         training_data
         .groupby("Datetime")
-        .agg({agg_variable: "sum"})
+        .agg({sub_config.AGG_VARIABLE: "sum"})
         .reset_index()
     )
 
@@ -159,10 +107,11 @@ def prepare_calculate_write_HASR_TL(
     # -------------------------------
     # Calculate missing HASR-TL values
     # -------------------------------
+    print("Calculate and write missing HASR-TL values ...")
 
     # Fill row by row
     for date in missing_hasr_tl_data_datetimes:
-            print("\nDate = {}".format(date.date()))
+            print("~> Date = {}".format(date.date()))
 
             # Baseline window ~> Baseline window immediately after the recent window
             first_baseline_date = date - pd.Timedelta(days=recent_window + baseline_window - 1)
@@ -316,6 +265,7 @@ def prepare_calculate_write_HASR_TL(
             # -------------------------------
 
             # Fill selected row baseline buckets values
+            print("~> Preparing row to add ...")
             new_date_hasr_tl_data_row_dict = {
                     "Year": date.year,
                     "Month": date.month,
@@ -323,42 +273,42 @@ def prepare_calculate_write_HASR_TL(
                     "Weekday": date.strftime("%A"),
                     "Aggregate variable": agg_variable,
 
-                    BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_b1_value, 2),
-                    BASELINE_SLA_VALUE_COLUMN_NAMES[1]: round(baseline_b2_value, 2),
-                    BASELINE_SLA_VALUE_COLUMN_NAMES[2]: round(baseline_b3_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_b1_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[1]: round(baseline_b2_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[2]: round(baseline_b3_value, 2),
 
-                    BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]: round(baseline_b1_proportion, 2),
-                    BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]: round(baseline_b2_proportion, 2),
-                    BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]: round(baseline_b3_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]: round(baseline_b1_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]: round(baseline_b2_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]: round(baseline_b3_proportion, 2),
 
-                    RECENT_SLA_VALUE_COLUMN_NAMES[0]: round(recent_b1_value, 2),
-                    RECENT_SLA_VALUE_COLUMN_NAMES[1]: round(recent_b2_value, 2),
-                    RECENT_SLA_VALUE_COLUMN_NAMES[2]: round(recent_b3_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[0]: round(recent_b1_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[1]: round(recent_b2_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[2]: round(recent_b3_value, 2),
 
-                    RECENT_SLA_PROPORTION_COLUMN_NAMES[0]: round(recent_b1_proportion, 2),
-                    RECENT_SLA_PROPORTION_COLUMN_NAMES[1]: round(recent_b2_proportion, 2),
-                    RECENT_SLA_PROPORTION_COLUMN_NAMES[2]: round(recent_b3_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[0]: round(recent_b1_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[1]: round(recent_b2_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[2]: round(recent_b3_proportion, 2),
 
                     # Not in use
-                    # BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(baseline_b2_b1, 2) if not np.isnan(baseline_b2_b1) else np.nan,
-                    # BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(baseline_b3_b2, 2) if not np.isnan(baseline_b3_b2) else np.nan,
-                    # BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(baseline_b3_b1, 2) if not np.isnan(baseline_b3_b1) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(baseline_b2_b1, 2) if not np.isnan(baseline_b2_b1) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(baseline_b3_b2, 2) if not np.isnan(baseline_b3_b2) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(baseline_b3_b1, 2) if not np.isnan(baseline_b3_b1) else np.nan,
 
-                    # RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_b2_b1, 2) if not np.isnan(recent_b2_b1) else np.nan,
-                    # RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_b3_b2, 2) if not np.isnan(recent_b3_b2) else np.nan,
-                    # RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_b3_b1, 2) if not np.isnan(recent_b3_b1) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_b2_b1, 2) if not np.isnan(recent_b2_b1) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_b3_b2, 2) if not np.isnan(recent_b3_b2) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_b3_b1, 2) if not np.isnan(recent_b3_b1) else np.nan,
 
-                    # RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_baseline_b1, 2) if not np.isnan(recent_baseline_b1) else np.nan,
-                    # RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_baseline_b2, 2) if not np.isnan(recent_baseline_b2) else np.nan,
-                    # RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_baseline_b3, 2) if not np.isnan(recent_baseline_b3) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_baseline_b1, 2) if not np.isnan(recent_baseline_b1) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_baseline_b2, 2) if not np.isnan(recent_baseline_b2) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_baseline_b3, 2) if not np.isnan(recent_baseline_b3) else np.nan,
 
-                    HASR_TL_COLUMN_NAMES[0]: round(hasr_tl, 2) if not np.isnan(hasr_tl) else np.nan,
-                    HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_baseline, 2) if not np.isnan(hasr_tl_baseline) else np.nan,
-                    HASR_TL_COLUMN_NAMES[2]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,
+                    sub_config.HASR_TL_COLUMN_NAMES[0]: round(hasr_tl, 2) if not np.isnan(hasr_tl) else np.nan,
+                    sub_config.HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_baseline, 2) if not np.isnan(hasr_tl_baseline) else np.nan,
+                    sub_config.HASR_TL_COLUMN_NAMES[2]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,
 
             }
 
-            for col in REQUIRED_COLUMNS_ORDER:
+            for col in sub_config.REQUIRED_COLUMNS_ORDER:
                 if col not in new_date_hasr_tl_data_row_dict:
                     new_date_hasr_tl_data_row_dict[col] = np.nan
 
@@ -366,20 +316,11 @@ def prepare_calculate_write_HASR_TL(
             print("~> Writing to HASR-TL data to sheet ...")
             with contextlib.redirect_stdout(StringIO()):
                 new_date_hasr_tl_data_row_dict = hf.clean_data(new_date_hasr_tl_data_row_dict)
-                new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=REQUIRED_COLUMNS_ORDER)
+                new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=sub_config.REQUIRED_COLUMNS_ORDER)
                 new_date_hasr_tl_data_row_sheet_format = new_date_hasr_tl_data_row.values.tolist()
                 hasr_tl_data_sheet.append_rows(new_date_hasr_tl_data_row_sheet_format)  
-
-prepare_calculate_write_HASR_TL(
-    agg_variable = AGG_VARIABLE, 
-    baseline_window = BASELINE_WINDOW, 
-    recent_window = RECENT_WINDOW,
-    baseline_weights = BASELINE_WINDOW_NORMALIZED_WEIGHTS, 
-    recent_weights = RECENT_WINDOW_NORMALIZED_WEIGHTS,
-    quantile_low = QUANTILE_LOW, 
-    quantile_high = QUANTILE_HIGH,
-    hasrl_tl_weights = HASR_TL_WEIGHTS
-)
+    
+    print("Done! ... {}".format(datetime.datetime.now()))
 
 
 
