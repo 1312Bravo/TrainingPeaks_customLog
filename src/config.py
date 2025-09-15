@@ -16,14 +16,14 @@ USER_CONFIGURATIONS = {
     "urh": {
         "garmin_email": os.getenv("GARMIN_EMAIL_URH"),
         "garmin_password": os.getenv("GARMIN_PASSWORD_URH"),
-        "gdrive_tp_log_filename": os.getenv("TP_LOG_URH"),
+        "gdrive_training_log_filename": os.getenv("TRAINING_LOG_URH"),
         "gdrive_daily_log_filename": os.getenv("DAILY_LOG_URH"),
     },
 
     "maja": {
         "garmin_email": os.getenv("GARMIN_EMAIL_MAJA"),
         "garmin_password": os.getenv("GARMIN_PASSWORD_MAJA"),
-        "gdrive_tp_log_filename": os.getenv("TP_LOG_MAJA"),
+        "gdrive_training_log_filename": os.getenv("TRAINING_LOG_MAJA"),
         "gdrive_daily_log_filename": os.getenv("DAILY_LOG_MAJA"),
     },
 

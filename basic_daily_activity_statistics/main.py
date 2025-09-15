@@ -24,17 +24,21 @@ from basic_daily_activity_statistics import config as sub_config
 from basic_daily_activity_statistics.daily_statistics import get_prepare_single_day_daily_statistics
 from basic_daily_activity_statistics.activity_statistics import get_prepare_single_day_activity_statistics
 
+# Logging
+from src.log_config import setup_logger
+logger = setup_logger(name=__name__)
+
 # -----------------------------------------------------
 # Main: Get and write basic Daily & Activity statistics for single user
 # -----------------------------------------------------
-def get_write_basic_daily_activity_statistics(user_email, user_password, user_tpLogFilename, user_dailyLogFilename):
-    print("\nRunning: Main ~ Basic Daily & Activity Statistics ... {}".format(datetime.datetime.now()))
+def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, training_log_file_name, daily_log_file_name):
+    logger.info("Running: Main ~ Basic Daily & Activity Statistics")
 
     # About
-    print("About user ~> email: {} ~> activity file name: {} &  daily file name: {}".format(
-        user_email, 
-        user_tpLogFilename, 
-        user_dailyLogFilename, 
+    logger.info("About user ~> email: {} ~> activity file name: {} &  daily file name: {}".format(
+        garmin_email, 
+        training_log_file_name, 
+        daily_log_file_name, 
         ))
 
     # ----------------------------------------------------- 
@@ -42,19 +46,21 @@ def get_write_basic_daily_activity_statistics(user_email, user_password, user_tp
     # -----------------------------------------------------
 
     # Garmin API
-    print("Authenticating Garmin Connect API ...")
+    logger.info("Authenticating Garmin Connect API")
     try:
-        garminClient = Garmin(user_email, user_password)
+        garminClient = Garmin(garmin_email, garmin_password)
         garminClient.login()
     except Exception as e:
-        print("~> Error: {}".format(e))
+        logger.error(f"Error Authenticating Garmin Connect API: {e}")
+        raise
 
     # Google drive API
-    print("Authenticating Google Drive API ...")
+    logger.info("Authenticating Google Drive API")
     try:
         googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
     except Exception as e:
-        print("~> Error: {}".format(e))
+        logger.error(f"Error Authenticating Google Drive API: {e}")
+        raise
 
 
     # ----------------------------------------------------- 
@@ -62,30 +68,32 @@ def get_write_basic_daily_activity_statistics(user_email, user_password, user_tp
     # -----------------------------------------------------
 
     # Daily Logs
-    print("Opening and preparing Daily Log file ...")
+    logger.info("Opening and preparing Daily Log file")
     try:
         daily_log_df, daily_log_sheet = hf.import_google_sheet(
             googleDrive_client = googleDrive_client, 
-            filename = user_dailyLogFilename, 
+            filename = daily_log_file_name, 
             sheet_name = config.BASIC_DAILY_STATISTICS_SHEET_NAME
             )
     except Exception as e:
-        print("Error: {}".format(e))
+        logger.error(f"Error opening Daily Log file: {e}")
+        raise
 
-    # TP Logs
-    print("Opening and preparing TP Log file ...")
+    # Training Logs
+    logger.info("Opening and preparing Training Log file")
     try:
-        tp_log_df, tp_log_sheet = hf.import_google_sheet(
+        training_log_df, training_log_sheet = hf.import_google_sheet(
             googleDrive_client = googleDrive_client, 
-            filename = user_tpLogFilename, 
+            filename = training_log_file_name, 
             sheet_name = config.BASIC_ACTIVITY_STATISTICS_SHEET_NAME)
     except Exception as e:
-        print("Error {}".format(e))
+        logger.error(f"Error opening Training Log file: {e}")
+        raise
 
     # ----------------------------------------------------- 
     # Calculate and write daily statistics to Drive sheet
     # -----------------------------------------------------
-    print("Prepare and write daily statistics ...")
+    logger.info("Prepare and write daily statistics")
 
     # Dates ~ From last date on sheet (+1) to yesterday (today + 1)
     dailyStats_lastDate = datetime.datetime(int(daily_log_df.iloc[-1]["Year"]), int(daily_log_df.iloc[-1]["Month"]), int(daily_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
@@ -98,7 +106,7 @@ def get_write_basic_daily_activity_statistics(user_email, user_password, user_tp
 
     if dailyStats_dateList:
         for singleDate in dailyStats_dateList:
-            print("~> Single day = {} ...".format(singleDate))
+            logger.debug("Single day = {}".format(singleDate))
 
             # Calculate
             singleDay_dailyStats_dict = get_prepare_single_day_daily_statistics(garminClient, singleDate)
@@ -113,15 +121,15 @@ def get_write_basic_daily_activity_statistics(user_email, user_password, user_tp
                 daily_log_sheet.append_rows(daily_log_sheetFormat)  
 
     else:
-        print("~> All daily statistics to {} (yesterday) already entered".format(dailyStats_endDate))
+        logger.debug("All daily statistics to {} (yesterday) already entered".format(dailyStats_endDate))
 
     # ----------------------------------------------------- 
     # Calculate and write activity statistics to Drive sheet
     # -----------------------------------------------------
-    print("Prepare and write activity statistics ...")
+    logger.info("Prepare and write activity statistics")
 
     # Dates ~ From last date on sheet (+1) to yesterday (today + 1)
-    activityStats_lastDate = datetime.datetime(int(tp_log_df.iloc[-1]["Year"]), int(tp_log_df.iloc[-1]["Month"]), int(tp_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
+    activityStats_lastDate = datetime.datetime(int(training_log_df.iloc[-1]["Year"]), int(training_log_df.iloc[-1]["Month"]), int(training_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
     activityStats_startDate = np.min([activityStats_lastDate, datetime.date.today() - datetime.timedelta(days=1)])
     activityStats_endDate = datetime.date.today() - datetime.timedelta(days=1)
     if activityStats_startDate <= activityStats_endDate:
@@ -131,22 +139,22 @@ def get_write_basic_daily_activity_statistics(user_email, user_password, user_tp
 
     if activityStats_dateList:
         for singleDate in activityStats_dateList:
-            print("~> Single day = {} ...".format(singleDate))
+            logger.debug("Single day = {}".format(singleDate))
 
             # Calculate
             singleDay_activityStats_dict = get_prepare_single_day_activity_statistics(garminClient, singleDate)
 
             # Write
-            if not tp_log_sheet.row_values(1):
-                tp_log_sheet.insert_row(sub_config.TP_LOG_EXPECTED_HEADERS, index=1)
+            if not training_log_sheet.row_values(1):
+                training_log_sheet.insert_row(sub_config.TRAINING_LOG_EXPECTED_HEADERS, index=1)
             for i in reversed(range(len(singleDay_activityStats_dict))):
                 with contextlib.redirect_stdout(StringIO()):
-                    tp_log_raw = hf.clean_data(singleDay_activityStats_dict["activity_{}".format(i)])
-                    tp_log_df = pd.DataFrame([tp_log_raw])
-                    tp_log_sheetFormat = tp_log_df.values.tolist()
-                    tp_log_sheet.append_rows(tp_log_sheetFormat)
+                    training_log_raw = hf.clean_data(singleDay_activityStats_dict["activity_{}".format(i)])
+                    training_log_df = pd.DataFrame([training_log_raw])
+                    training_log_sheetFormat = training_log_df.values.tolist()
+                    training_log_sheet.append_rows(training_log_sheetFormat)
     
     else:
-        print("~> All activity statistics to {} (yesterday) already entered".format(activityStats_endDate))
+        logger.debug("All activity statistics to {} (yesterday) already entered".format(activityStats_endDate))
 
-    print("Done! ... {}".format(datetime.datetime.now()))
+    logger.info("Done: Main ~ Basic Daily & Activity Statistics")

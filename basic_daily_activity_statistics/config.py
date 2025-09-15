@@ -6,7 +6,7 @@ DAILY_LOG_EXPECTED_HEADERS = [
     "Low aerobic load", "High aerobic load", "Anaerobic load"
     ]
 
-TP_LOG_EXPECTED_HEADERS = [
+TRAINING_LOG_EXPECTED_HEADERS = [
     "Year", "Month", "Day", "Weekday", "Description", "Activity type", "Start time", "Location", "Distance [km]", "Duration [h]", 
     "Elevation gain [m]", "Average pace [min/km] or speed [km/h]", "Gradient adjusted pace [min/km]",
     "Average heart rate", "Maximum heart rate", "Normalized power [w]", "Calories [kcal]",

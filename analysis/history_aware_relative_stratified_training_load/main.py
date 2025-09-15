@@ -10,7 +10,6 @@ if repo_root not in sys.path:
 
 import pandas as pd
 import numpy as np
-import datetime
 import gspread
 import contextlib
 from io import StringIO
@@ -20,35 +19,39 @@ from src import help_functions as hf
 from analysis.history_aware_relative_stratified_training_load import config as sub_config
 from analysis.history_aware_relative_stratified_training_load import help_functions as rtl_hf
 
+# Logging
+from src.log_config import setup_logger
+logger = setup_logger(name=__name__)
+
 # -------------------------------
 # Main: Prepare data, Calculate HASR-TL values and write to sheet
 # -------------------------------
-def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
-    print("\nRunning: Main ~ Analysis - History Aware Relative Stratified - Training Load... {}".format(datetime.datetime.now()))
+def prepare_calculate_write_hasr_tl(garmin_email, training_log_file_name):
+    logger.info("Running: Main ~ Analysis - History Aware Relative Stratified - Training Load")
 
     # Define "input parameters"
-    agg_variable = sub_config.AGG_VARIABLE,
-    baseline_window = sub_config.BASELINE_WINDOW,
-    recent_window = sub_config.RECENT_WINDOW,
-    baseline_weights = sub_config.BASELINE_WINDOW_NORMALIZED_WEIGHTS,
-    recent_weights = sub_config.RECENT_WINDOW_NORMALIZED_WEIGHTS,
-    quantile_low = sub_config.QUANTILE_LOW,
-    quantile_high = sub_config.QUANTILE_HIGH,
+    agg_variable = sub_config.AGG_VARIABLE
+    baseline_window = sub_config.BASELINE_WINDOW
+    recent_window = sub_config.RECENT_WINDOW
+    baseline_weights = sub_config.BASELINE_WINDOW_NORMALIZED_WEIGHTS
+    recent_weights = sub_config.RECENT_WINDOW_NORMALIZED_WEIGHTS
+    quantile_low = sub_config.QUANTILE_LOW
+    quantile_high = sub_config.QUANTILE_HIGH
     hasrl_tl_weights = sub_config.HASR_TL_WEIGHTS
     
     # About
-    print("About user ~> email: {} ~> activity file name: {}".format(
-        user_email, 
-        user_tpLogFilename, 
+    logger.info("About user ~> Garmin email: {} ~> activity file name: {}".format(
+        garmin_email, 
+        training_log_file_name, 
         ))
     
-    print(f"""
-          Baseline window = {baseline_window} 
-          Recent window = {recent_window} 
-          Quantile low = {quantile_low} 
-          Quantile high = {quantile_high} 
-          HASR-TL Weights = {hasrl_tl_weights}
-        """)
+    logger.info(
+        f"Baseline window = {baseline_window}, "
+        f"Recent window = {recent_window}, "
+        f"Quantile low = {quantile_low}, "
+        f"Quantile high = {quantile_high}, "
+        f"HASR-TL Weights = {hasrl_tl_weights}"
+    )
 
     # -------------------------------
     # Get and prepare data
@@ -57,25 +60,27 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
     # Get data
     googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
 
-    print("Opening and preparing TP Log file ...")
+    logger.info("Opening and preparing Training Log file")
     try:
         training_data_raw, _ = hf.import_google_sheet(
-            googleDrive_client=googleDrive_client, 
-            filename = user_tpLogFilename, 
+            googleDrive_client = googleDrive_client, 
+            filename = training_log_file_name, 
             sheet_name = config.BASIC_ACTIVITY_STATISTICS_SHEET_NAME
             )
     except Exception as e:
-        print("Error: {}".format(e))
+        logger.error(f"Error opening Training Log file: {e}")
+        raise
     
-    print("Opening and preparing HASR-TL Log file ...")
+    logger.info("Opening and preparing HASR-TL Log file")
     try:
         hasr_tl_data_raw, hasr_tl_data_sheet = hf.import_google_sheet(
-            googleDrive_client=googleDrive_client, 
-            filename = config.DRIVE_TP_LOG_FILENAMES[0], 
+            googleDrive_client = googleDrive_client, 
+            filename = training_log_file_name, 
             sheet_name = sub_config.HASR_TL_SHEET_NAME
             )
     except Exception as e:
-        print("Error: {}".format(e))
+        logger.error(f"Error opening HASR-TL Log file: {e}")
+        raise
 
     # "Clean" data
     training_data = hf.data_safe_convert_to_numeric(training_data_raw.copy(deep=True))
@@ -107,21 +112,21 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
     # -------------------------------
     # Calculate missing HASR-TL values
     # -------------------------------
-    print("Calculate and write missing HASR-TL values ...")
+    logger.info("Calculate and write missing HASR-TL values")
 
     # Fill row by row
     for date in missing_hasr_tl_data_datetimes:
-            print("~> Date = {}".format(date.date()))
+            logger.info("Date = {}".format(date.date()))
 
             # Baseline window ~> Baseline window immediately after the recent window
             first_baseline_date = date - pd.Timedelta(days=recent_window + baseline_window - 1)
             last_baseline_date = date - pd.Timedelta(days=recent_window)
-            print("~> Baseline dates: {} - {}".format(first_baseline_date.date(), last_baseline_date.date()))
+            logger.debug("Baseline dates: {} - {}".format(first_baseline_date.date(), last_baseline_date.date()))
 
             # Recent window ~> Recent window including "date"
             first_recent_date = date - pd.Timedelta(days=recent_window-1)
             last_recent_date = date
-            print("~> Recent dates: {} - {}".format(first_recent_date.date(), last_recent_date.date()))
+            logger.debug("Recent dates: {} - {}".format(first_recent_date.date(), last_recent_date.date()))
 
             # -------------------------------
             # BASELINE VALUES
@@ -129,7 +134,7 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
 
             # We have enough history to calculate baseline buckets values
             if first_baseline_date in base_tl_data_datetimes:
-                print("~> Baseline SLA: Calculating SLA and Proportions ...")
+                logger.debug("Baseline SLA: Calculating SLA and Proportions")
 
                 # Baseline set
                 baseline_set = (
@@ -164,7 +169,7 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
             
             # We do not have enough history to calculate baseline buckets values
             else:
-                print("~> Baseline SLA: Not enough data avaliable")
+                logger.debug("Baseline SLA: Not enough data avaliable")
 
                 baseline_b1_value = np.nan
                 baseline_b2_value = np.nan
@@ -180,7 +185,7 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
 
             # We have enough history to calculate recent buckets values
             if (first_recent_date in base_tl_data_datetimes) and (first_baseline_date in base_tl_data_datetimes):
-                print("~> Recent SLA: Calculating SLA and Proportions ...")
+                logger.debug("Recent SLA: Calculating SLA and Proportions")
 
                 # Recent set
                 recent_set = (
@@ -212,7 +217,7 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
             
             # We do not have enough history to calculate recent buckets values
             else:
-                print("~> Recent SLA: Not enough baseline data to calculate quantiles")
+                logger.debug("Recent SLA: Not enough baseline data to calculate quantiles")
 
                 recent_b1_value = np.nan
                 recent_b2_value = np.nan
@@ -226,17 +231,17 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
             # BUCKET LEVEL DIAGNOSTICS 
             # -------------------------------
 
-            print("~> Within Baseline SLA comparison ...")
+            logger.debug("Within Baseline SLA comparison")
             baseline_b2_b1 = baseline_b2_value / baseline_b1_value
             baseline_b3_b2 = baseline_b3_value / baseline_b2_value
             baseline_b3_b1 = baseline_b3_value / baseline_b1_value
 
-            print("~> Within Recent SLA comparison ...")
+            logger.debug("Within Recent SLA comparison")
             recent_b2_b1 = recent_b2_value / recent_b1_value
             recent_b3_b2 = recent_b3_value / recent_b2_value
             recent_b3_b1 = recent_b3_value / recent_b1_value
             
-            #print("~> Recent vs. Baseline Bucket SLA comparison ...")
+            #logger.debug("Recent vs. Baseline Bucket SLA comparison")
             recent_baseline_b1 = recent_b1_value / baseline_b1_value
             recent_baseline_b2 = recent_b2_value / baseline_b2_value
             recent_baseline_b3 = recent_b3_value / baseline_b3_value
@@ -245,7 +250,7 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
             # FINAL HASR-TL 
             # -------------------------------
 
-            print("~> HASR-TL calculation ...")
+            logger.debug("HASR-TL calculation")
             hasr_tl_baseline = (
                 hasrl_tl_weights[0] * baseline_b1_value + 
                 hasrl_tl_weights[1] * baseline_b2_value +
@@ -265,7 +270,7 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
             # -------------------------------
 
             # Fill selected row baseline buckets values
-            print("~> Preparing row to add ...")
+            logger.debug("Preparing row to add")
             new_date_hasr_tl_data_row_dict = {
                     "Year": date.year,
                     "Month": date.month,
@@ -313,14 +318,14 @@ def prepare_calculate_write_hasr_tl(user_email, user_tpLogFilename):
                     new_date_hasr_tl_data_row_dict[col] = np.nan
 
             # Write to sheet
-            print("~> Writing to HASR-TL data to sheet ...")
+            logger.debug("Writing to HASR-TL data to sheet")
             with contextlib.redirect_stdout(StringIO()):
                 new_date_hasr_tl_data_row_dict = hf.clean_data(new_date_hasr_tl_data_row_dict)
                 new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=sub_config.REQUIRED_COLUMNS_ORDER)
                 new_date_hasr_tl_data_row_sheet_format = new_date_hasr_tl_data_row.values.tolist()
                 hasr_tl_data_sheet.append_rows(new_date_hasr_tl_data_row_sheet_format)  
     
-    print("Done! ... {}".format(datetime.datetime.now()))
+    logger.info("Done: Main ~ Analysis - History Aware Relative Stratified - Training Load")
 
 
 

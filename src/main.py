@@ -15,20 +15,23 @@ if repo_root not in sys.path:
 from src import config
 from basic_daily_activity_statistics.main import get_write_basic_daily_activity_statistics
 from analysis.history_aware_relative_stratified_training_load.main import prepare_calculate_write_hasr_tl
-# -----------------------------------------------------
-# -----------------------------------------------------
 
+# Logging
+from src.log_config import setup_logger
+logger = setup_logger()
+
+# GOGO!
 if __name__ == "__main__":
-    print("\nGoGo! ~> {}".format(datetime.datetime.now()))
+    logger.info("Go Main!")
     
     # Get and write basic Daily & Activity statistics for all selected users
     for user in config.BASIC_DAILY_ACTIVITY_STATISTICS_USERS:
         user_config = config.USER_CONFIGURATIONS[user]
         get_write_basic_daily_activity_statistics(
-            email = user_config["garmin_email"], 
-            password = user_config["garmin_password"] , 
-            tp_log = user_config["gdrive_tp_log_filename"], 
-            daily_log = user_config["gdrive_daily_log_filename"]
+            garmin_email = user_config["garmin_email"], 
+            garmin_password = user_config["garmin_password"] , 
+            training_log_file_name = user_config["gdrive_training_log_filename"], 
+            daily_log_file_name = user_config["gdrive_daily_log_filename"]
         )
 
     
@@ -36,8 +39,8 @@ if __name__ == "__main__":
     for user in config.HISTORY_AWARE_RELATIVE_STRATIFIED_TRAINING_LOG_USERS:
         user_config = config.USER_CONFIGURATIONS[user]
         prepare_calculate_write_hasr_tl(
-            email = user_config["garmin_email"], 
-            tp_log = user_config["garmin_password"]
+            garmin_email = user_config["garmin_email"], 
+            training_log_file_name = user_config["gdrive_training_log_filename"]
         )
 
-    print("Done! ~> {}\n".format(datetime.datetime.now()))
+    logger.info("Done: Main")
