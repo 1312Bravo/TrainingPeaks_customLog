@@ -26,7 +26,7 @@ logger = setup_logger(name=__name__)
 # -------------------------------
 # Main: Prepare data, Calculate HASR-TL values and write to sheet
 # -------------------------------
-def prepare_calculate_write_hasr_tl(garmin_email, training_log_file_name):
+def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     logger.info("Running: Main ~ Analysis - History Aware Relative Stratified - Training Load")
 
     # Define "input parameters"
@@ -42,7 +42,7 @@ def prepare_calculate_write_hasr_tl(garmin_email, training_log_file_name):
     # About
     logger.info("About user ~> Garmin email: {} ~> activity file name: {}".format(
         garmin_email, 
-        training_log_file_name, 
+        activity_log_file_name, 
         ))
     
     logger.info(
@@ -60,22 +60,22 @@ def prepare_calculate_write_hasr_tl(garmin_email, training_log_file_name):
     # Get data
     googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
 
-    logger.info("Opening and preparing Training Log file")
+    logger.info("Opening and preparing Activity Log file")
     try:
-        training_data_raw, _ = hf.import_google_sheet(
+        activity_data_raw, _ = hf.import_google_sheet(
             googleDrive_client = googleDrive_client, 
-            filename = training_log_file_name, 
+            filename = activity_log_file_name, 
             sheet_name = config.BASIC_ACTIVITY_STATISTICS_SHEET_NAME
             )
     except Exception as e:
-        logger.error(f"Error opening Training Log file: {e}")
+        logger.error(f"Error opening Activity Log file: {e}")
         raise
     
     logger.info("Opening and preparing HASR-TL Log file")
     try:
         hasr_tl_data_raw, hasr_tl_data_sheet = hf.import_google_sheet(
             googleDrive_client = googleDrive_client, 
-            filename = training_log_file_name, 
+            filename = activity_log_file_name, 
             sheet_name = sub_config.HASR_TL_SHEET_NAME
             )
     except Exception as e:
@@ -83,14 +83,14 @@ def prepare_calculate_write_hasr_tl(garmin_email, training_log_file_name):
         raise
 
     # "Clean" data
-    training_data = hf.data_safe_convert_to_numeric(training_data_raw.copy(deep=True))
+    activity_data = hf.data_safe_convert_to_numeric(activity_data_raw.copy(deep=True))
     hasr_tl_data = hf.data_safe_convert_to_numeric(hasr_tl_data_raw.copy(deep=True))
 
     # Prepare data for calculations
-    training_data["Datetime"] = pd.to_datetime(training_data[["Year", "Month", "Day"]])
-    training_data = training_data.sort_values(by="Datetime").reset_index(drop=True)
+    activity_data["Datetime"] = pd.to_datetime(activity_data[["Year", "Month", "Day"]])
+    activity_data = activity_data.sort_values(by="Datetime").reset_index(drop=True)
     base_tl_data = (
-        training_data
+        activity_data
         .groupby("Datetime")
         .agg({sub_config.AGG_VARIABLE: "sum"})
         .reset_index()

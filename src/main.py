@@ -30,17 +30,17 @@ if __name__ == "__main__":
         get_write_basic_daily_activity_statistics(
             garmin_email = user_config["garmin_email"], 
             garmin_password = user_config["garmin_password"] , 
-            training_log_file_name = user_config["gdrive_training_log_filename"], 
+            activity_log_file_name = user_config["gdrive_activity_log_filename"], 
             daily_log_file_name = user_config["gdrive_daily_log_filename"]
         )
 
 
     # Get and write History Aware Relative Stratified Training Load for all selected users
-    for user in config.HISTORY_AWARE_RELATIVE_STRATIFIED_TRAINING_LOG_USERS:
+    for user in config.HISTORY_AWARE_RELATIVE_STRATIFIED_ACTIVITY_LOG_USERS:
         user_config = config.USER_CONFIGURATIONS[user]
         prepare_calculate_write_hasr_tl(
             garmin_email = user_config["garmin_email"], 
-            training_log_file_name = user_config["gdrive_training_log_filename"]
+            activity_log_file_name = user_config["gdrive_activity_log_filename"]
         )
 
     logger.info("Done: Main")

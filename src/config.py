@@ -16,14 +16,14 @@ USER_CONFIGURATIONS = {
     "urh": {
         "garmin_email": os.getenv("GARMIN_EMAIL_URH"),
         "garmin_password": os.getenv("GARMIN_PASSWORD_URH"),
-        "gdrive_training_log_filename": os.getenv("TRAINING_LOG_URH"),
+        "gdrive_activity_log_filename": os.getenv("ACTIVITY_LOG_URH"),
         "gdrive_daily_log_filename": os.getenv("DAILY_LOG_URH"),
     },
 
     "maja": {
         "garmin_email": os.getenv("GARMIN_EMAIL_MAJA"),
         "garmin_password": os.getenv("GARMIN_PASSWORD_MAJA"),
-        "gdrive_training_log_filename": os.getenv("TRAINING_LOG_MAJA"),
+        "gdrive_activity_log_filename": os.getenv("ACTIVITY_LOG_MAJA"),
         "gdrive_daily_log_filename": os.getenv("DAILY_LOG_MAJA"),
     },
 
@@ -31,7 +31,7 @@ USER_CONFIGURATIONS = {
 
 DRIVE_CREDENTIALS = Credentials.from_service_account_file("googleDrive_secrets.json", scopes= ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
 BASIC_DAILY_STATISTICS_SHEET_NAME = "Raw Daily Data"
-BASIC_ACTIVITY_STATISTICS_SHEET_NAME = "Raw Training Data"
+BASIC_ACTIVITY_STATISTICS_SHEET_NAME = "Raw Activity Data"
 
 BASIC_DAILY_ACTIVITY_STATISTICS_USERS = ["urh"]
-HISTORY_AWARE_RELATIVE_STRATIFIED_TRAINING_LOG_USERS = ["urh"]
+HISTORY_AWARE_RELATIVE_STRATIFIED_ACTIVITY_LOG_USERS = ["urh"]

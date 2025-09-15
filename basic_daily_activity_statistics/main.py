@@ -31,13 +31,13 @@ logger = setup_logger(name=__name__)
 # -----------------------------------------------------
 # Main: Get and write basic Daily & Activity statistics for single user
 # -----------------------------------------------------
-def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, training_log_file_name, daily_log_file_name):
+def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, activity_log_file_name, daily_log_file_name):
     logger.info("Running: Main ~ Basic Daily & Activity Statistics")
 
     # About
     logger.info("About user ~> email: {} ~> activity file name: {} &  daily file name: {}".format(
         garmin_email, 
-        training_log_file_name, 
+        activity_log_file_name, 
         daily_log_file_name, 
         ))
 
@@ -79,15 +79,15 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, tra
         logger.error(f"Error opening Daily Log file: {e}")
         raise
 
-    # Training Logs
-    logger.info("Opening and preparing Training Log file")
+    # Activity Logs
+    logger.info("Opening and preparing Activity Log file")
     try:
-        training_log_df, training_log_sheet = hf.import_google_sheet(
+        activity_log_df, activity_log_sheet = hf.import_google_sheet(
             googleDrive_client = googleDrive_client, 
-            filename = training_log_file_name, 
+            filename = activity_log_file_name, 
             sheet_name = config.BASIC_ACTIVITY_STATISTICS_SHEET_NAME)
     except Exception as e:
-        logger.error(f"Error opening Training Log file: {e}")
+        logger.error(f"Error opening Activity Log file: {e}")
         raise
 
     # ----------------------------------------------------- 
@@ -129,7 +129,7 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, tra
     logger.info("Prepare and write activity statistics")
 
     # Dates ~ From last date on sheet (+1) to yesterday (today + 1)
-    activityStats_lastDate = datetime.datetime(int(training_log_df.iloc[-1]["Year"]), int(training_log_df.iloc[-1]["Month"]), int(training_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
+    activityStats_lastDate = datetime.datetime(int(activity_log_df.iloc[-1]["Year"]), int(activity_log_df.iloc[-1]["Month"]), int(activity_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
     activityStats_startDate = np.min([activityStats_lastDate, datetime.date.today() - datetime.timedelta(days=1)])
     activityStats_endDate = datetime.date.today() - datetime.timedelta(days=1)
     if activityStats_startDate <= activityStats_endDate:
@@ -145,14 +145,14 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, tra
             singleDay_activityStats_dict = get_prepare_single_day_activity_statistics(garminClient, singleDate)
 
             # Write
-            if not training_log_sheet.row_values(1):
-                training_log_sheet.insert_row(sub_config.TRAINING_LOG_EXPECTED_HEADERS, index=1)
+            if not activity_log_sheet.row_values(1):
+                activity_log_sheet.insert_row(sub_config.ACTIVITY_LOG_EXPECTED_HEADERS, index=1)
             for i in reversed(range(len(singleDay_activityStats_dict))):
                 with contextlib.redirect_stdout(StringIO()):
-                    training_log_raw = hf.clean_data(singleDay_activityStats_dict["activity_{}".format(i)])
-                    training_log_df = pd.DataFrame([training_log_raw])
-                    training_log_sheetFormat = training_log_df.values.tolist()
-                    training_log_sheet.append_rows(training_log_sheetFormat)
+                    activity_log_raw = hf.clean_data(singleDay_activityStats_dict["activity_{}".format(i)])
+                    activity_log_df = pd.DataFrame([activity_log_raw])
+                    activity_log_sheetFormat = activity_log_df.values.tolist()
+                    activity_log_sheet.append_rows(activity_log_sheetFormat)
     
     else:
         logger.debug("All activity statistics to {} (yesterday) already entered".format(activityStats_endDate))
