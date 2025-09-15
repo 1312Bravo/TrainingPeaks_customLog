@@ -1,0 +1,331 @@
+# ----------------------------------------------------- 
+# Libraries
+# -----------------------------------------------------
+
+import os
+import sys
+repo_root = os.path.abspath(os.getcwd())  
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+
+import pandas as pd
+import numpy as np
+import gspread
+import contextlib
+from io import StringIO
+
+from src import config
+from src import help_functions as hf
+from analysis.history_aware_relative_stratified_training_load import config as sub_config
+from analysis.history_aware_relative_stratified_training_load import help_functions as rtl_hf
+
+# Logging
+from src.log_config import setup_logger
+logger = setup_logger(name=__name__)
+
+# -------------------------------
+# Main: Prepare data, Calculate HASR-TL values and write to sheet
+# -------------------------------
+def prepare_calculate_write_hasr_tl(garmin_email, training_log_file_name):
+    logger.info("Running: Main ~ Analysis - History Aware Relative Stratified - Training Load")
+
+    # Define "input parameters"
+    agg_variable = sub_config.AGG_VARIABLE
+    baseline_window = sub_config.BASELINE_WINDOW
+    recent_window = sub_config.RECENT_WINDOW
+    baseline_weights = sub_config.BASELINE_WINDOW_NORMALIZED_WEIGHTS
+    recent_weights = sub_config.RECENT_WINDOW_NORMALIZED_WEIGHTS
+    quantile_low = sub_config.QUANTILE_LOW
+    quantile_high = sub_config.QUANTILE_HIGH
+    hasrl_tl_weights = sub_config.HASR_TL_WEIGHTS
+    
+    # About
+    logger.info("About user ~> Garmin email: {} ~> activity file name: {}".format(
+        garmin_email, 
+        training_log_file_name, 
+        ))
+    
+    logger.info(
+        f"Baseline window = {baseline_window}, "
+        f"Recent window = {recent_window}, "
+        f"Quantile low = {quantile_low}, "
+        f"Quantile high = {quantile_high}, "
+        f"HASR-TL Weights = {hasrl_tl_weights}"
+    )
+
+    # -------------------------------
+    # Get and prepare data
+    # -------------------------------
+
+    # Get data
+    googleDrive_client = gspread.authorize(config.DRIVE_CREDENTIALS)
+
+    logger.info("Opening and preparing Training Log file")
+    try:
+        training_data_raw, _ = hf.import_google_sheet(
+            googleDrive_client = googleDrive_client, 
+            filename = training_log_file_name, 
+            sheet_name = config.BASIC_ACTIVITY_STATISTICS_SHEET_NAME
+            )
+    except Exception as e:
+        logger.error(f"Error opening Training Log file: {e}")
+        raise
+    
+    logger.info("Opening and preparing HASR-TL Log file")
+    try:
+        hasr_tl_data_raw, hasr_tl_data_sheet = hf.import_google_sheet(
+            googleDrive_client = googleDrive_client, 
+            filename = training_log_file_name, 
+            sheet_name = sub_config.HASR_TL_SHEET_NAME
+            )
+    except Exception as e:
+        logger.error(f"Error opening HASR-TL Log file: {e}")
+        raise
+
+    # "Clean" data
+    training_data = hf.data_safe_convert_to_numeric(training_data_raw.copy(deep=True))
+    hasr_tl_data = hf.data_safe_convert_to_numeric(hasr_tl_data_raw.copy(deep=True))
+
+    # Prepare data for calculations
+    training_data["Datetime"] = pd.to_datetime(training_data[["Year", "Month", "Day"]])
+    training_data = training_data.sort_values(by="Datetime").reset_index(drop=True)
+    base_tl_data = (
+        training_data
+        .groupby("Datetime")
+        .agg({sub_config.AGG_VARIABLE: "sum"})
+        .reset_index()
+    )
+
+    hasr_tl_data["Datetime"] = pd.to_datetime(hasr_tl_data[["Year", "Month", "Day"]])
+        
+    # -------------------------------
+    # We work based on Datetime
+    # -------------------------------
+
+    base_tl_data = base_tl_data.set_index("Datetime").sort_index()
+    hasr_tl_data = hasr_tl_data.set_index("Datetime").sort_index()
+
+    base_tl_data_datetimes = base_tl_data.index
+    last_hasr_tl_data_datetime = hasr_tl_data.index.max()
+    missing_hasr_tl_data_datetimes = base_tl_data.loc[base_tl_data.index > last_hasr_tl_data_datetime].index
+
+    # -------------------------------
+    # Calculate missing HASR-TL values
+    # -------------------------------
+    logger.info("Calculate and write missing HASR-TL values")
+
+    # Fill row by row
+    for date in missing_hasr_tl_data_datetimes:
+            logger.info("Date = {}".format(date.date()))
+
+            # Baseline window ~> Baseline window immediately after the recent window
+            first_baseline_date = date - pd.Timedelta(days=recent_window + baseline_window - 1)
+            last_baseline_date = date - pd.Timedelta(days=recent_window)
+            logger.debug("Baseline dates: {} - {}".format(first_baseline_date.date(), last_baseline_date.date()))
+
+            # Recent window ~> Recent window including "date"
+            first_recent_date = date - pd.Timedelta(days=recent_window-1)
+            last_recent_date = date
+            logger.debug("Recent dates: {} - {}".format(first_recent_date.date(), last_recent_date.date()))
+
+            # -------------------------------
+            # BASELINE VALUES
+            # -------------------------------
+
+            # We have enough history to calculate baseline buckets values
+            if first_baseline_date in base_tl_data_datetimes:
+                logger.debug("Baseline SLA: Calculating SLA and Proportions")
+
+                # Baseline set
+                baseline_set = (
+                    base_tl_data
+                    .loc[(base_tl_data.index >= first_baseline_date) & (base_tl_data.index <= last_baseline_date), agg_variable]
+                    .sort_index(ascending=False)
+                    .reset_index(drop=True)
+                    )
+                
+                # Buckets sets & Weights
+                quantile_low_baseline = rtl_hf.weighted_quantile(values=baseline_set, weights=baseline_weights, quantile=quantile_low)
+                quantile_high_baseline = rtl_hf.weighted_quantile(values=baseline_set, weights=baseline_weights, quantile=quantile_high)
+
+                b1_baseline_set = baseline_set[baseline_set <= quantile_low_baseline]
+                b1_baseline_weights = baseline_weights[baseline_set <= quantile_low_baseline]
+
+                b2_baseline_set = baseline_set[(baseline_set > quantile_low_baseline) & (baseline_set <= quantile_high_baseline)]
+                b2_baseline_weights = baseline_weights[(baseline_set > quantile_low_baseline) & (baseline_set <= quantile_high_baseline)]
+
+                b3_baseline_set = baseline_set[baseline_set > quantile_high_baseline]
+                b3_baseline_weights = baseline_weights[baseline_set > quantile_high_baseline]
+
+                # Aggregate buckets values
+                baseline_b1_value = rtl_hf.weighted_mean(b1_baseline_set, b1_baseline_weights)
+                baseline_b2_value = rtl_hf.weighted_mean(b2_baseline_set, b2_baseline_weights)
+                baseline_b3_value = rtl_hf.weighted_mean(b3_baseline_set, b3_baseline_weights)
+
+                # Proportions in each bucket
+                baseline_b1_proportion = len(b1_baseline_set)/len(baseline_set) * 100
+                baseline_b2_proportion = len(b2_baseline_set)/len(baseline_set) * 100
+                baseline_b3_proportion = len(b3_baseline_set)/len(baseline_set) * 100
+            
+            # We do not have enough history to calculate baseline buckets values
+            else:
+                logger.debug("Baseline SLA: Not enough data avaliable")
+
+                baseline_b1_value = np.nan
+                baseline_b2_value = np.nan
+                baseline_b3_value = np.nan
+
+                baseline_b1_proportion = np.nan
+                baseline_b2_proportion = np.nan 
+                baseline_b3_proportion = np.nan
+                
+            # -------------------------------
+            # RECENT VALUES
+            # -------------------------------
+
+            # We have enough history to calculate recent buckets values
+            if (first_recent_date in base_tl_data_datetimes) and (first_baseline_date in base_tl_data_datetimes):
+                logger.debug("Recent SLA: Calculating SLA and Proportions")
+
+                # Recent set
+                recent_set = (
+                    base_tl_data
+                    .loc[(base_tl_data.index >= first_recent_date) & (base_tl_data.index <= last_recent_date), agg_variable]
+                    .sort_index(ascending=False)
+                    .reset_index(drop=True)
+                )
+
+                # Aggregate variable values & Weights for each bucket
+                b1_recent_set = recent_set[recent_set <= quantile_low_baseline]
+                b1_recent_weights = recent_weights[recent_set <= quantile_low_baseline]
+
+                b2_recent_set = recent_set[(recent_set > quantile_low_baseline) & (recent_set <= quantile_high_baseline)]
+                b2_recent_weights = recent_weights[(recent_set > quantile_low_baseline) & (recent_set <= quantile_high_baseline)]
+
+                b3_recent_set = recent_set[recent_set > quantile_high_baseline]
+                b3_recent_weights = recent_weights[recent_set > quantile_high_baseline]
+
+                # Aggregate buckets values
+                recent_b1_value = rtl_hf.weighted_mean(b1_recent_set, b1_recent_weights)
+                recent_b2_value = rtl_hf.weighted_mean(b2_recent_set, b2_recent_weights)
+                recent_b3_value = rtl_hf.weighted_mean(b3_recent_set, b3_recent_weights)
+
+                # Proportions in each bucket
+                recent_b1_proportion = len(b1_recent_set)/len(recent_set) * 100
+                recent_b2_proportion = len(b2_recent_set)/len(recent_set) * 100
+                recent_b3_proportion = len(b3_recent_set)/len(recent_set) * 100
+            
+            # We do not have enough history to calculate recent buckets values
+            else:
+                logger.debug("Recent SLA: Not enough baseline data to calculate quantiles")
+
+                recent_b1_value = np.nan
+                recent_b2_value = np.nan
+                recent_b3_value = np.nan
+
+                recent_b1_proportion = np.nan
+                recent_b2_proportion = np.nan
+                recent_b3_proportion = np.nan
+
+            # -------------------------------
+            # BUCKET LEVEL DIAGNOSTICS 
+            # -------------------------------
+
+            logger.debug("Within Baseline SLA comparison")
+            baseline_b2_b1 = baseline_b2_value / baseline_b1_value
+            baseline_b3_b2 = baseline_b3_value / baseline_b2_value
+            baseline_b3_b1 = baseline_b3_value / baseline_b1_value
+
+            logger.debug("Within Recent SLA comparison")
+            recent_b2_b1 = recent_b2_value / recent_b1_value
+            recent_b3_b2 = recent_b3_value / recent_b2_value
+            recent_b3_b1 = recent_b3_value / recent_b1_value
+            
+            #logger.debug("Recent vs. Baseline Bucket SLA comparison")
+            recent_baseline_b1 = recent_b1_value / baseline_b1_value
+            recent_baseline_b2 = recent_b2_value / baseline_b2_value
+            recent_baseline_b3 = recent_b3_value / baseline_b3_value
+
+            # -------------------------------
+            # FINAL HASR-TL 
+            # -------------------------------
+
+            logger.debug("HASR-TL calculation")
+            hasr_tl_baseline = (
+                hasrl_tl_weights[0] * baseline_b1_value + 
+                hasrl_tl_weights[1] * baseline_b2_value +
+                hasrl_tl_weights[2] * baseline_b3_value
+                )
+            
+            hasr_tl_recent = (
+                hasrl_tl_weights[0] * recent_b1_value + 
+                hasrl_tl_weights[1] * recent_b2_value +
+                hasrl_tl_weights[2] * recent_b3_value
+                )
+            
+            hasr_tl = hasr_tl_recent / hasr_tl_baseline
+
+            # -------------------------------
+            # ADD NEW ROW
+            # -------------------------------
+
+            # Fill selected row baseline buckets values
+            logger.debug("Preparing row to add")
+            new_date_hasr_tl_data_row_dict = {
+                    "Year": date.year,
+                    "Month": date.month,
+                    "Day": date.day,
+                    "Weekday": date.strftime("%A"),
+                    "Aggregate variable": agg_variable,
+
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_b1_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[1]: round(baseline_b2_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[2]: round(baseline_b3_value, 2),
+
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]: round(baseline_b1_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]: round(baseline_b2_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]: round(baseline_b3_proportion, 2),
+
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[0]: round(recent_b1_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[1]: round(recent_b2_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[2]: round(recent_b3_value, 2),
+
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[0]: round(recent_b1_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[1]: round(recent_b2_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[2]: round(recent_b3_proportion, 2),
+
+                    # Not in use
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(baseline_b2_b1, 2) if not np.isnan(baseline_b2_b1) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(baseline_b3_b2, 2) if not np.isnan(baseline_b3_b2) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(baseline_b3_b1, 2) if not np.isnan(baseline_b3_b1) else np.nan,
+
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_b2_b1, 2) if not np.isnan(recent_b2_b1) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_b3_b2, 2) if not np.isnan(recent_b3_b2) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_b3_b1, 2) if not np.isnan(recent_b3_b1) else np.nan,
+
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_baseline_b1, 2) if not np.isnan(recent_baseline_b1) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_baseline_b2, 2) if not np.isnan(recent_baseline_b2) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_baseline_b3, 2) if not np.isnan(recent_baseline_b3) else np.nan,
+
+                    sub_config.HASR_TL_COLUMN_NAMES[0]: round(hasr_tl, 2) if not np.isnan(hasr_tl) else np.nan,
+                    sub_config.HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_baseline, 2) if not np.isnan(hasr_tl_baseline) else np.nan,
+                    sub_config.HASR_TL_COLUMN_NAMES[2]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,
+
+            }
+
+            for col in sub_config.REQUIRED_COLUMNS_ORDER:
+                if col not in new_date_hasr_tl_data_row_dict:
+                    new_date_hasr_tl_data_row_dict[col] = np.nan
+
+            # Write to sheet
+            logger.debug("Writing to HASR-TL data to sheet")
+            with contextlib.redirect_stdout(StringIO()):
+                new_date_hasr_tl_data_row_dict = hf.clean_data(new_date_hasr_tl_data_row_dict)
+                new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=sub_config.REQUIRED_COLUMNS_ORDER)
+                new_date_hasr_tl_data_row_sheet_format = new_date_hasr_tl_data_row.values.tolist()
+                hasr_tl_data_sheet.append_rows(new_date_hasr_tl_data_row_sheet_format)  
+    
+    logger.info("Done: Main ~ Analysis - History Aware Relative Stratified - Training Load")
+
+
+

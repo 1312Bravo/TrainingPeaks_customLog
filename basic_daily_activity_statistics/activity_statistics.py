@@ -1,9 +1,20 @@
 import pandas as pd
 import numpy as np
 
-from help_functions import replace_nan_with_empty_string
+# Set up repo root path
+import os
+import sys
+repo_root = os.path.abspath(os.getcwd())  
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
-def singleDay_activityStats(garminClient, selectedDate):
+# Import help functions
+from src import help_functions as hf
+
+# -----------------------------------------------------
+# GO: Get & Prepare single day activity statistics
+# -----------------------------------------------------
+def get_prepare_single_day_activity_statistics(garminClient, selectedDate):
 
     # Download data
     activity_stats = garminClient.get_activities_by_date(selectedDate.isoformat(), selectedDate.isoformat())
@@ -61,7 +72,7 @@ def singleDay_activityStats(garminClient, selectedDate):
 
             }
         
-        singleActivity_activityScores = replace_nan_with_empty_string(singleActivity_activityScores)
+        singleActivity_activityScores = hf.replace_nan_with_empty_string(singleActivity_activityScores)
         activityScores["activity_{}".format(0)] = singleActivity_activityScores
 
     else:
@@ -319,7 +330,7 @@ def singleDay_activityStats(garminClient, selectedDate):
             }
 
             # Multiple activies
-            singleActivity_activityScores = replace_nan_with_empty_string(singleActivity_activityScores)
+            singleActivity_activityScores = hf.replace_nan_with_empty_string(singleActivity_activityScores)
             activityScores["activity_{}".format(i)] = singleActivity_activityScores
 
     # Return

@@ -1,9 +1,21 @@
 import pandas as pd
 import numpy as np
 
-from help_functions import replace_nan_with_empty_string
+# Set up repo root path
+import os
+import sys
+repo_root = os.path.abspath(os.getcwd())  
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
-def singleDay_dailyStats(garminClient, selectedDate):
+# Import help functions
+from src import help_functions as hf
+
+# -----------------------------------------------------
+# GO: Get & Prepare single day daily statistics
+# -----------------------------------------------------
+
+def get_prepare_single_day_daily_statistics(garminClient, selectedDate):
 
     # Download data
     overall_stats = garminClient.get_stats(selectedDate.isoformat()) 
@@ -70,5 +82,5 @@ def singleDay_dailyStats(garminClient, selectedDate):
         }
     
     # Return
-    dailyScores = replace_nan_with_empty_string(dailyScores)
+    dailyScores = hf.replace_nan_with_empty_string(dailyScores)
     return dailyScores
