@@ -24,6 +24,9 @@ jobs:
       - name: Create .env File
         run: echo "${{ secrets.ENV_VARS }}" > .env
 
+      - name: Set ENV to prod
+        run: echo "ENV=prod" >> .env
+
       - name: Create googleDrive_secrets.json
         run: echo '${{ secrets.GOOGLE_DRIVE_SECRETS }}' > googleDrive_secrets.json
 

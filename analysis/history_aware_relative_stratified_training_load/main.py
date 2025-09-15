@@ -23,6 +23,11 @@ from analysis.history_aware_relative_stratified_training_load import help_functi
 from src.log_config import setup_logger
 logger = setup_logger(name=__name__)
 
+# Silence third-party debug logs
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
+
 # -------------------------------
 # Main: Prepare data, Calculate HASR-TL values and write to sheet
 # -------------------------------
