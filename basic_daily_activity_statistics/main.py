@@ -28,6 +28,11 @@ from basic_daily_activity_statistics.activity_statistics import get_prepare_sing
 from src.log_config import setup_logger
 logger = setup_logger(name=__name__)
 
+# Silence third-party debug logs
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("requests").setLevel(logging.WARNING)
+
 # -----------------------------------------------------
 # Main: Get and write basic Daily & Activity statistics for single user
 # -----------------------------------------------------

@@ -1,16 +1,20 @@
-# ----------------------------------------------------- 
 # Libraries
-# -----------------------------------------------------
 from google.oauth2.service_account import Credentials
+import logging
 
+# Load .env file values
 from dotenv import load_dotenv
 import os
-
-# ----------------------------------------------------- 
-# Environmental variables
-# -----------------------------------------------------
-
 load_dotenv()
+env = os.getenv("ENV", "dev").lower()
+
+# Environmental specific configurations
+if env == "prod":
+    tmp = "If needed"
+else:
+    tmp = "if needed"
+
+# User configurations
 USER_CONFIGURATIONS = {
 
     "urh": {
@@ -29,6 +33,7 @@ USER_CONFIGURATIONS = {
 
 }
 
+# Variables
 DRIVE_CREDENTIALS = Credentials.from_service_account_file("googleDrive_secrets.json", scopes= ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
 BASIC_DAILY_STATISTICS_SHEET_NAME = "Raw Daily Data"
 BASIC_ACTIVITY_STATISTICS_SHEET_NAME = "Raw Activity Data"
