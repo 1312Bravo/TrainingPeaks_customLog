@@ -2,7 +2,7 @@ import logging
 
 def setup_logger(name=None, level=logging.INFO):
     logger = logging.getLogger(name)
-    if not logger.hasHandlers():
+    if not logger.handlers:
         handler = logging.StreamHandler()
         formatter = logging.Formatter(
             "%(asctime)s | %(levelname)s | %(name)s | %(message)s"

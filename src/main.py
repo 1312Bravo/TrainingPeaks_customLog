@@ -18,7 +18,7 @@ from analysis.history_aware_relative_stratified_training_load.main import prepar
 
 # Logging
 from src.log_config import setup_logger
-logger = setup_logger()
+logger = setup_logger(name=__name__)
 
 # GOGO!
 if __name__ == "__main__":
@@ -34,7 +34,7 @@ if __name__ == "__main__":
             daily_log_file_name = user_config["gdrive_daily_log_filename"]
         )
 
-    
+
     # Get and write History Aware Relative Stratified Training Load for all selected users
     for user in config.HISTORY_AWARE_RELATIVE_STRATIFIED_TRAINING_LOG_USERS:
         user_config = config.USER_CONFIGURATIONS[user]
