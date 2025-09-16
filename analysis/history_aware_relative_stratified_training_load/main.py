@@ -153,8 +153,8 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     )
                 
                 # Buckets sets & Weights
-                quantile_low_baseline = rtl_hf.weighted_quantile(values=baseline_set, weights=baseline_weights, quantile=quantile_low)
-                quantile_high_baseline = rtl_hf.weighted_quantile(values=baseline_set, weights=baseline_weights, quantile=quantile_high)
+                quantile_low_baseline = rtl_hf.get_weighted_quantile_value(quantile=quantile_low, values=baseline_set, weights=baseline_weights)
+                quantile_high_baseline = rtl_hf.get_weighted_quantile_value(quantile=quantile_high, values=baseline_set, weights=baseline_weights)
 
                 b1_baseline_set = baseline_set[baseline_set <= quantile_low_baseline]
                 b1_baseline_weights = baseline_weights[baseline_set <= quantile_low_baseline]
@@ -166,9 +166,9 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                 b3_baseline_weights = baseline_weights[baseline_set > quantile_high_baseline]
 
                 # Aggregate buckets values
-                baseline_b1_value = rtl_hf.weighted_mean(b1_baseline_set, b1_baseline_weights)
-                baseline_b2_value = rtl_hf.weighted_mean(b2_baseline_set, b2_baseline_weights)
-                baseline_b3_value = rtl_hf.weighted_mean(b3_baseline_set, b3_baseline_weights)
+                baseline_b1_value = rtl_hf.get_weighted_mean(b1_baseline_set, b1_baseline_weights)
+                baseline_b2_value = rtl_hf.get_weighted_mean(b2_baseline_set, b2_baseline_weights)
+                baseline_b3_value = rtl_hf.get_weighted_mean(b3_baseline_set, b3_baseline_weights)
 
                 # Proportions in each bucket
                 baseline_b1_proportion = len(b1_baseline_set)/len(baseline_set) * 100
@@ -203,6 +203,15 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     .reset_index(drop=True)
                 )
 
+                # Recent session classification 
+                recent_session_percentile_rank = rtl_hf.get_weighted_percentile_rank(value=recent_set.iloc[0], values=baseline_set, weights=baseline_weights)
+                if recent_session_percentile_rank <= sub_config.QUANTILE_LOW:
+                    recent_session_class = "Easy"
+                elif recent_session_percentile_rank <= sub_config.QUANTILE_HIGH:
+                    recent_session_class = "Hard"
+                else:
+                    recent_session_class = "Long" 
+
                 # Aggregate variable values & Weights for each bucket
                 b1_recent_set = recent_set[recent_set <= quantile_low_baseline]
                 b1_recent_weights = recent_weights[recent_set <= quantile_low_baseline]
@@ -214,9 +223,9 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                 b3_recent_weights = recent_weights[recent_set > quantile_high_baseline]
 
                 # Aggregate buckets values
-                recent_b1_value = rtl_hf.weighted_mean(b1_recent_set, b1_recent_weights)
-                recent_b2_value = rtl_hf.weighted_mean(b2_recent_set, b2_recent_weights)
-                recent_b3_value = rtl_hf.weighted_mean(b3_recent_set, b3_recent_weights)
+                recent_b1_value = rtl_hf.get_weighted_mean(b1_recent_set, b1_recent_weights)
+                recent_b2_value = rtl_hf.get_weighted_mean(b2_recent_set, b2_recent_weights)
+                recent_b3_value = rtl_hf.get_weighted_mean(b3_recent_set, b3_recent_weights)
 
                 # Proportions in each bucket
                 recent_b1_proportion = len(b1_recent_set)/len(recent_set) * 100
@@ -226,6 +235,9 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
             # We do not have enough history to calculate recent buckets values
             else:
                 logger.debug("Recent SLA: Not enough baseline data to calculate quantiles")
+
+                recent_session_percentile_rank = np.nan
+                recent_session_class = np.nan
 
                 recent_b1_value = np.nan
                 recent_b2_value = np.nan
@@ -249,7 +261,7 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
             recent_b3_b2 = recent_b3_value / recent_b2_value
             recent_b3_b1 = recent_b3_value / recent_b1_value
             
-            #logger.debug("Recent vs. Baseline Bucket SLA comparison")
+            logger.debug("Recent vs. Baseline Bucket SLA comparison")
             recent_baseline_b1 = recent_b1_value / baseline_b1_value
             recent_baseline_b2 = recent_b2_value / baseline_b2_value
             recent_baseline_b3 = recent_b3_value / baseline_b3_value
@@ -293,6 +305,9 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]: round(baseline_b1_proportion, 2),
                     sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]: round(baseline_b2_proportion, 2),
                     sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]: round(baseline_b3_proportion, 2),
+                    
+                    sub_config.RECENT_SESSION_CLASS_COLUMN_NAMES[0]: round(recent_session_percentile_rank, 2) if not np.isnan(recent_session_percentile_rank) else np.nan,
+                    sub_config.RECENT_SESSION_CLASS_COLUMN_NAMES[1]: recent_session_class,
 
                     sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[0]: round(recent_b1_value, 2),
                     sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[1]: round(recent_b2_value, 2),
@@ -318,7 +333,6 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     sub_config.HASR_TL_COLUMN_NAMES[0]: round(hasr_tl, 2) if not np.isnan(hasr_tl) else np.nan,
                     sub_config.HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,
                     sub_config.HASR_TL_COLUMN_NAMES[2]: round(hasr_tl_baseline, 2) if not np.isnan(hasr_tl_baseline) else np.nan,
-                    
 
             }
 
