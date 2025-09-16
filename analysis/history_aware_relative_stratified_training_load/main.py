@@ -2,18 +2,21 @@
 # Libraries
 # -----------------------------------------------------
 
-import os
-import sys
-repo_root = os.path.abspath(os.getcwd())  
-if repo_root not in sys.path:
-    sys.path.insert(0, repo_root)
-
+# Librarires
 import pandas as pd
 import numpy as np
 import gspread
 import contextlib
 from io import StringIO
 
+# Set up repo root path
+import os
+import sys
+repo_root = os.path.abspath(os.getcwd())  
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
+
+# Help functions & "Main" functions
 from src import config
 from src import help_functions as hf
 from analysis.history_aware_relative_stratified_training_load import config as sub_config
@@ -313,8 +316,9 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_baseline_b3, 2) if not np.isnan(recent_baseline_b3) else np.nan,
 
                     sub_config.HASR_TL_COLUMN_NAMES[0]: round(hasr_tl, 2) if not np.isnan(hasr_tl) else np.nan,
-                    sub_config.HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_baseline, 2) if not np.isnan(hasr_tl_baseline) else np.nan,
-                    sub_config.HASR_TL_COLUMN_NAMES[2]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,
+                    sub_config.HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,
+                    sub_config.HASR_TL_COLUMN_NAMES[2]: round(hasr_tl_baseline, 2) if not np.isnan(hasr_tl_baseline) else np.nan,
+                    
 
             }
 
