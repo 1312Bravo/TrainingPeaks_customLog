@@ -34,7 +34,6 @@ if __name__ == "__main__":
             daily_log_file_name = user_config["gdrive_daily_log_filename"]
         )
 
-
     # Get and write History Aware Relative Stratified Training Load for all selected users
     for user in config.HISTORY_AWARE_RELATIVE_STRATIFIED_ACTIVITY_LOG_USERS:
         user_config = config.USER_CONFIGURATIONS[user]
