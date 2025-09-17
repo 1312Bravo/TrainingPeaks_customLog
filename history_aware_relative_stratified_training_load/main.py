@@ -19,8 +19,8 @@ if repo_root not in sys.path:
 # Help functions & "Main" functions
 from src import config
 from src import help_functions as hf
-from analysis.history_aware_relative_stratified_training_load import config as sub_config
-from analysis.history_aware_relative_stratified_training_load import help_functions as rtl_hf
+from history_aware_relative_stratified_training_load import config as sub_config
+from history_aware_relative_stratified_training_load import help_functions as rtl_hf
 
 # Logging
 from src.log_config import setup_logger
