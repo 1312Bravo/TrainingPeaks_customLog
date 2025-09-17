@@ -14,7 +14,7 @@ if repo_root not in sys.path:
 # Help functions & "Main" functions
 from src import config
 from basic_daily_activity_statistics.main import get_write_basic_daily_activity_statistics
-from analysis.history_aware_relative_stratified_training_load.main import prepare_calculate_write_hasr_tl
+from history_aware_relative_stratified_training_load.main import prepare_calculate_write_hasr_tl
 
 # Logging
 from src.log_config import setup_logger
