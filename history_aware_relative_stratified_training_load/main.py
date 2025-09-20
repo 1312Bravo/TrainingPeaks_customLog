@@ -106,9 +106,11 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     
     activity_data = activity_data.sort_values(by="Datetime").reset_index(drop=True)
     base_tl_data = activity_data[["Datetime", "Duration [h]", sub_config.AGG_VARIABLE]].copy()
-    base_tl_data[sub_config.AGG_VARIABLE+"_minute"] = base_tl_data[sub_config.AGG_VARIABLE] / (base_tl_data["Duration [h]"] * 60)
-    base_tl_data[sub_config.AGG_VARIABLE] = base_tl_data[sub_config.AGG_VARIABLE].fillna(base_tl_data[sub_config.AGG_VARIABLE].median())
-    base_tl_data[sub_config.AGG_VARIABLE+"_minute"] = base_tl_data[sub_config.AGG_VARIABLE+"_minute"].fillna(base_tl_data[sub_config.AGG_VARIABLE+"_minute"].median())
+    base_tl_data[sub_config.AGG_VARIABLE+" minute"] = base_tl_data[sub_config.AGG_VARIABLE] / (base_tl_data["Duration [h]"] * 60)
+
+    base_tl_data[sub_config.AGG_VARIABLE] = base_tl_data[sub_config.AGG_VARIABLE].fillna(0)
+    base_tl_data[sub_config.AGG_VARIABLE+" minute"] = base_tl_data[sub_config.AGG_VARIABLE+" minute"].fillna(0)
+    base_tl_data["Duration [h]"] = base_tl_data["Duration [h]"].fillna(0)
 
     hasr_tl_data["Datetime"] = pd.to_datetime(
         hasr_tl_data["Year"].astype(str) + "-" +
@@ -163,47 +165,72 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     base_tl_data
                     .loc[
                         (base_tl_data.index.normalize() >= pd.Timestamp(first_baseline_date)) & (base_tl_data.index.normalize() <= pd.Timestamp(last_baseline_date)), 
-                        [sub_config.AGG_VARIABLE, sub_config.AGG_VARIABLE+"_minute", "Duration [h]"]]
+                        [sub_config.AGG_VARIABLE, sub_config.AGG_VARIABLE+" minute", "Duration [h]"]]
                     .sort_index(ascending=False)
+                    .assign(date = lambda x: x.index.normalize())
                     .reset_index(drop=True)
                     )
                 
-                # Buckets sets & Weights ~> Sort out weights so they are duplicated if dates are duplicated ...
-                quantile_hard = rtl_hf.get_weighted_quantile_value(quantile=quantile_tl_minute_hard, values=baseline_set[sub_config.AGG_VARIABLE+"_minute"].to_numpy(), weights=baseline_weights)
-                b2_baseline_mask = baseline_set[sub_config.AGG_VARIABLE+"_minute"] > quantile_hard
-                b2_baseline_set = baseline_set.loc[b2_baseline_mask, sub_config.AGG_VARIABLE]
-                b2_baseline_weights = baseline_weights[b2_baseline_mask]
+                # Match weights to baseline set
+                baseline_set_weights = (
+                    pd.DataFrame({
+                        "date": pd.date_range(start=first_baseline_date, end=last_baseline_date, freq="D"),
+                        "weight": baseline_weights
+                    })
+                    .reset_index(drop=True)
+                    .merge(baseline_set[["date"]], on="date", how="right")
+                    .sort_values("date", ascending=True)
+                    .reset_index(drop=True)
+                    ["weight"]
+                    )
                 
-                quantile_long = rtl_hf.get_weighted_quantile_value(quantile=quantile_duration_long, values=baseline_set["Duration [h]"].to_numpy(), weights=baseline_weights)
-                b3_baseline_mask = (baseline_set[sub_config.AGG_VARIABLE+"_minute"] <= quantile_hard) & (baseline_set["Duration [h]"] > quantile_long)
-                b3_baseline_set = baseline_set.loc[b3_baseline_mask, sub_config.AGG_VARIABLE]
-                b3_baseline_weights = baseline_weights[b3_baseline_mask]
+                # Buckets sets & Weights
+                quantile_hard = rtl_hf.get_weighted_quantile_value(
+                    quantile=quantile_tl_minute_hard, 
+                    values=baseline_set[sub_config.AGG_VARIABLE+" minute"].to_numpy(), 
+                    weights=baseline_set_weights.to_numpy()
+                    )
+                hard_baseline_mask = baseline_set[sub_config.AGG_VARIABLE+" minute"] > quantile_hard
+                hard_baseline_set = baseline_set.loc[hard_baseline_mask, sub_config.AGG_VARIABLE]
+                hard_baseline_set_weights = baseline_set_weights[hard_baseline_mask]
+                
+                easy_long_baseline_set = baseline_set[~hard_baseline_mask]
+                easy_long_baseline_set_weights = baseline_set_weights[~hard_baseline_mask]
+                quantile_long = rtl_hf.get_weighted_quantile_value(
+                    quantile=quantile_duration_long, 
+                    values=easy_long_baseline_set["Duration [h]"].to_numpy(), 
+                    weights=easy_long_baseline_set_weights.to_numpy()
+                    )
 
-                b1_baseline_mask = (baseline_set[sub_config.AGG_VARIABLE+"_minute"] <= quantile_hard) & (baseline_set["Duration [h]"] <= quantile_long)
-                b1_baseline_set = baseline_set.loc[b1_baseline_mask, sub_config.AGG_VARIABLE]
-                b1_baseline_weights = baseline_weights[b1_baseline_mask]
+                long_baseline_mask = easy_long_baseline_set["Duration [h]"] > quantile_long
+                long_baseline_set = easy_long_baseline_set.loc[long_baseline_mask, sub_config.AGG_VARIABLE]
+                long_baseline_set_weights = easy_long_baseline_set_weights[long_baseline_mask]
+
+                easy_baseline_mask = easy_long_baseline_set["Duration [h]"] <= quantile_long
+                easy_baseline_set = easy_long_baseline_set.loc[easy_baseline_mask, sub_config.AGG_VARIABLE]
+                easy_baseline_set_weights = easy_long_baseline_set_weights[easy_baseline_mask]
 
                 # Aggregate buckets values
-                baseline_b1_value = rtl_hf.get_weighted_mean(b1_baseline_set, b1_baseline_weights)
-                baseline_b2_value = rtl_hf.get_weighted_mean(b2_baseline_set, b2_baseline_weights)
-                baseline_b3_value = rtl_hf.get_weighted_mean(b3_baseline_set, b3_baseline_weights)
+                baseline_easy_value = rtl_hf.get_weighted_mean(easy_baseline_set, easy_baseline_set_weights)
+                baseline_hard_value = rtl_hf.get_weighted_mean(hard_baseline_set, hard_baseline_set_weights)
+                baseline_long_value = rtl_hf.get_weighted_mean(long_baseline_set, long_baseline_set_weights)
 
                 # Proportions in each bucket
-                baseline_b1_proportion = len(b1_baseline_set)/len(baseline_set) * 100
-                baseline_b2_proportion = len(b2_baseline_set)/len(baseline_set) * 100
-                baseline_b3_proportion = len(b3_baseline_set)/len(baseline_set) * 100
+                baseline_easy_proportion = len(easy_baseline_set)/len(baseline_set) * 100
+                baseline_hard_proportion = len(hard_baseline_set)/len(baseline_set) * 100
+                baseline_long_proportion = len(long_baseline_set)/len(baseline_set) * 100
             
             # We do not have enough history to calculate baseline buckets values
             else:
                 logger.debug("Baseline SLA: Not enough data avaliable")
 
-                baseline_b1_value = np.nan
-                baseline_b2_value = np.nan
-                baseline_b3_value = np.nan
+                baseline_easy_value = np.nan
+                baseline_hard_value = np.nan
+                baseline_long_value = np.nan
 
-                baseline_b1_proportion = np.nan
-                baseline_b2_proportion = np.nan 
-                baseline_b3_proportion = np.nan
+                baseline_easy_proportion = np.nan
+                baseline_hard_proportion = np.nan 
+                baseline_long_proportion = np.nan
                 
             # -------------------------------
             # RECENT VALUES
@@ -217,74 +244,116 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                 recent_set = (
                     base_tl_data
                     .loc[
-                        (base_tl_data.index >= pd.Timestamp(first_recent_date)) & (base_tl_data.index <= pd.Timestamp(last_recent_date)),  
-                        [sub_config.AGG_VARIABLE, sub_config.AGG_VARIABLE+"_minute", "Duration [h]"]]
+                        (base_tl_data.index.normalize() >= pd.Timestamp(first_recent_date)) & (base_tl_data.index.normalize() <= pd.Timestamp(last_recent_date)),  
+                        [sub_config.AGG_VARIABLE, sub_config.AGG_VARIABLE+" minute", "Duration [h]"]]
                     .sort_index(ascending=False)
+                    .assign(date = lambda x: x.index.normalize())
                     .reset_index(drop=True)
                 )
 
+                # Match weights to recemt set
+                recent_set_weights = (
+                    pd.DataFrame({
+                        "date": pd.date_range(start=first_recent_date, end=last_recent_date, freq="D"),
+                        "weight": recent_weights
+                    })
+                    .reset_index(drop=True)
+                    .merge(recent_set[["date"]], on="date", how="right")
+                    .sort_values("date", ascending=True)
+                    .reset_index(drop=True)
+                    ["weight"]
+                    )
+
                 # Recent session classification 
-                recent_session_percentile_rank = rtl_hf.get_weighted_percentile_rank(value=recent_set.iloc[0], values=baseline_set, weights=baseline_weights)
-                if recent_session_percentile_rank <= sub_config.QUANTILE_LOW:
-                    recent_session_class = "Easy"
-                elif recent_session_percentile_rank <= sub_config.QUANTILE_HIGH:
+                recent_session = recent_set.iloc[0]
+                recent_session_overall_percentile_rank = rtl_hf.get_weighted_percentile_rank(
+                    value=recent_session[sub_config.AGG_VARIABLE], 
+                    values=baseline_set[sub_config.AGG_VARIABLE].to_numpy(), 
+                    weights=baseline_set_weights.to_numpy()
+                    )
+                
+                if recent_session[sub_config.AGG_VARIABLE+" minute"] > quantile_hard:
                     recent_session_class = "Hard"
+                    recent_session_class_percentile_rank = rtl_hf.get_weighted_percentile_rank(
+                        value=recent_session[sub_config.AGG_VARIABLE], 
+                        values=hard_baseline_set.to_numpy(), 
+                        weights=hard_baseline_set_weights.to_numpy()
+                    )
+                elif recent_session["Duration [h]"] > quantile_long:
+                    recent_session_class = "Long"
+                    recent_session_class_percentile_rank = rtl_hf.get_weighted_percentile_rank(
+                        value=recent_session[sub_config.AGG_VARIABLE], 
+                        values=long_baseline_set.to_numpy(), 
+                        weights=long_baseline_set_weights.to_numpy()
+                    )
                 else:
-                    recent_session_class = "Long" 
+                    recent_session_class = "Easy" 
+                    recent_session_class_percentile_rank = rtl_hf.get_weighted_percentile_rank(
+                        value=recent_session[sub_config.AGG_VARIABLE], 
+                        values=easy_baseline_set.to_numpy(), 
+                        weights=easy_baseline_set_weights.to_numpy()
+                    )
 
                 # Aggregate variable values & Weights for each bucket
-                b1_recent_set = recent_set[recent_set <= quantile_low_baseline]
-                b1_recent_weights = recent_weights[recent_set <= quantile_low_baseline]
+                hard_recent_mask = recent_set[sub_config.AGG_VARIABLE+" minute"] > quantile_hard
+                hard_recent_set = recent_set.loc[hard_recent_mask, sub_config.AGG_VARIABLE]
+                hard_recent_set_weights = recent_set_weights[hard_recent_mask]
 
-                b2_recent_set = recent_set[(recent_set > quantile_low_baseline) & (recent_set <= quantile_high_baseline)]
-                b2_recent_weights = recent_weights[(recent_set > quantile_low_baseline) & (recent_set <= quantile_high_baseline)]
+                easy_long_recent_set = recent_set[~hard_recent_mask]
+                easy_long_recent_set_weights = recent_set_weights[~hard_recent_mask]
 
-                b3_recent_set = recent_set[recent_set > quantile_high_baseline]
-                b3_recent_weights = recent_weights[recent_set > quantile_high_baseline]
+                long_recent_mask = easy_long_recent_set["Duration [h]"] > quantile_long
+                long_recent_set = easy_long_recent_set.loc[long_recent_mask, sub_config.AGG_VARIABLE]
+                long_recent_set_weights = easy_long_recent_set_weights[long_recent_mask]
+
+                easy_recent_mask = easy_long_recent_set["Duration [h]"] <= quantile_long
+                easy_recent_set = easy_long_recent_set.loc[easy_recent_mask, sub_config.AGG_VARIABLE]
+                easy_recent_set_weights = easy_long_recent_set_weights[easy_recent_mask]
 
                 # Aggregate buckets values
-                recent_b1_value = rtl_hf.get_weighted_mean(b1_recent_set, b1_recent_weights)
-                recent_b2_value = rtl_hf.get_weighted_mean(b2_recent_set, b2_recent_weights)
-                recent_b3_value = rtl_hf.get_weighted_mean(b3_recent_set, b3_recent_weights)
+                recent_easy_value = rtl_hf.get_weighted_mean(easy_recent_set, easy_recent_set_weights)
+                recent_hard_value = rtl_hf.get_weighted_mean(hard_recent_set, hard_recent_set_weights)
+                recent_long_value = rtl_hf.get_weighted_mean(long_recent_set, long_recent_set_weights)
 
                 # Proportions in each bucket
-                recent_b1_proportion = len(b1_recent_set)/len(recent_set) * 100
-                recent_b2_proportion = len(b2_recent_set)/len(recent_set) * 100
-                recent_b3_proportion = len(b3_recent_set)/len(recent_set) * 100
+                recent_easy_proportion = len(easy_recent_set)/len(recent_set) * 100
+                recent_hard_proportion = len(hard_recent_set)/len(recent_set) * 100
+                recent_long_proportion = len(long_recent_set)/len(recent_set) * 100
             
             # We do not have enough history to calculate recent buckets values
             else:
                 logger.debug("Recent SLA: Not enough baseline data to calculate quantiles")
 
-                recent_session_percentile_rank = np.nan
+                recent_session_overall_percentile_rank = np.nan
                 recent_session_class = np.nan
+                recent_session_class_percentile_rank = np.nan
 
-                recent_b1_value = np.nan
-                recent_b2_value = np.nan
-                recent_b3_value = np.nan
+                recent_easy_value = np.nan
+                recent_hard_value = np.nan
+                recent_long_value = np.nan
 
-                recent_b1_proportion = np.nan
-                recent_b2_proportion = np.nan
-                recent_b3_proportion = np.nan
+                recent_easy_proportion = np.nan
+                recent_hard_proportion = np.nan
+                recent_long_proportion = np.nan
 
             # -------------------------------
             # BUCKET LEVEL DIAGNOSTICS 
             # -------------------------------
 
             logger.debug("Within Baseline SLA comparison")
-            baseline_b2_b1 = baseline_b2_value / baseline_b1_value
-            baseline_b3_b2 = baseline_b3_value / baseline_b2_value
-            baseline_b3_b1 = baseline_b3_value / baseline_b1_value
+            baseline_hard_easy = baseline_hard_value / baseline_easy_value
+            baseline_long_hard = baseline_long_value / baseline_hard_value
+            baseline_long_easy = baseline_long_value / baseline_easy_value
 
             logger.debug("Within Recent SLA comparison")
-            recent_b2_b1 = recent_b2_value / recent_b1_value
-            recent_b3_b2 = recent_b3_value / recent_b2_value
-            recent_b3_b1 = recent_b3_value / recent_b1_value
+            recent_hard_easy = recent_hard_value / recent_easy_value
+            recent_long_hard = recent_long_value / recent_hard_value
+            recent_long_easy = recent_long_value / recent_easy_value
             
             logger.debug("Recent vs. Baseline Bucket SLA comparison")
-            recent_baseline_b1 = recent_b1_value / baseline_b1_value
-            recent_baseline_b2 = recent_b2_value / baseline_b2_value
-            recent_baseline_b3 = recent_b3_value / baseline_b3_value
+            recent_baseline_b1 = recent_easy_value / baseline_easy_value
+            recent_baseline_b2 = recent_hard_value / baseline_hard_value
+            recent_baseline_b3 = recent_long_value / baseline_long_value
 
             # -------------------------------
             # FINAL HASR-TL 
@@ -292,15 +361,15 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
 
             logger.debug("HASR-TL calculation")
             hasr_tl_baseline = (
-                hasrl_tl_weights[0] * baseline_b1_value + 
-                hasrl_tl_weights[1] * baseline_b2_value +
-                hasrl_tl_weights[2] * baseline_b3_value
+                hasrl_tl_weights[0] * baseline_easy_value + 
+                hasrl_tl_weights[1] * baseline_hard_value +
+                hasrl_tl_weights[2] * baseline_long_value
                 )
             
             hasr_tl_recent = (
-                hasrl_tl_weights[0] * recent_b1_value + 
-                hasrl_tl_weights[1] * recent_b2_value +
-                hasrl_tl_weights[2] * recent_b3_value
+                hasrl_tl_weights[0] * recent_easy_value + 
+                hasrl_tl_weights[1] * recent_hard_value +
+                hasrl_tl_weights[2] * recent_long_value
                 )
             
             hasr_tl = hasr_tl_recent / hasr_tl_baseline
@@ -322,37 +391,38 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     "Activity type": activity_help["Activity type"],
                     "Aggregate variable": agg_variable,
 
-                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_b1_value, 2),
-                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[1]: round(baseline_b2_value, 2),
-                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[2]: round(baseline_b3_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_easy_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[1]: round(baseline_hard_value, 2),
+                    sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[2]: round(baseline_long_value, 2),
 
-                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]: round(baseline_b1_proportion, 2),
-                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]: round(baseline_b2_proportion, 2),
-                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]: round(baseline_b3_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[0]: round(baseline_easy_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[1]: round(baseline_hard_proportion, 2),
+                    sub_config.BASELINE_SLA_PROPORTION_COLUMN_NAMES[2]: round(baseline_long_proportion, 2),
                     
-                    sub_config.RECENT_SESSION_CLASS_COLUMN_NAMES[0]: round(recent_session_percentile_rank, 2) if not np.isnan(recent_session_percentile_rank) else np.nan,
+                    sub_config.RECENT_SESSION_CLASS_COLUMN_NAMES[0]: round(recent_session_overall_percentile_rank, 2) if not np.isnan(recent_session_overall_percentile_rank) else np.nan,
                     sub_config.RECENT_SESSION_CLASS_COLUMN_NAMES[1]: recent_session_class,
+                    sub_config.RECENT_SESSION_CLASS_COLUMN_NAMES[2]: round(recent_session_class_percentile_rank, 2) if not np.isnan(recent_session_class_percentile_rank) else np.nan,
 
-                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[0]: round(recent_b1_value, 2),
-                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[1]: round(recent_b2_value, 2),
-                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[2]: round(recent_b3_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[0]: round(recent_easy_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[1]: round(recent_hard_value, 2),
+                    sub_config.RECENT_SLA_VALUE_COLUMN_NAMES[2]: round(recent_long_value, 2),
 
-                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[0]: round(recent_b1_proportion, 2),
-                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[1]: round(recent_b2_proportion, 2),
-                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[2]: round(recent_b3_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[0]: round(recent_easy_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[1]: round(recent_hard_proportion, 2),
+                    sub_config.RECENT_SLA_PROPORTION_COLUMN_NAMES[2]: round(recent_long_proportion, 2),
 
                     # Not in use
-                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(baseline_b2_b1, 2) if not np.isnan(baseline_b2_b1) else np.nan,
-                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(baseline_b3_b2, 2) if not np.isnan(baseline_b3_b2) else np.nan,
-                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(baseline_b3_b1, 2) if not np.isnan(baseline_b3_b1) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(baseline_hard_easy, 2) if not np.isnan(baseline_hard_easy) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(baseline_long_hard, 2) if not np.isnan(baseline_long_hard) else np.nan,
+                    # sub_config.BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(baseline_long_easy, 2) if not np.isnan(baseline_long_easy) else np.nan,
 
-                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_b2_b1, 2) if not np.isnan(recent_b2_b1) else np.nan,
-                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_b3_b2, 2) if not np.isnan(recent_b3_b2) else np.nan,
-                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_b3_b1, 2) if not np.isnan(recent_b3_b1) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_hard_easy, 2) if not np.isnan(recent_hard_easy) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_long_hard, 2) if not np.isnan(recent_long_hard) else np.nan,
+                    # sub_config.RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_long_easy, 2) if not np.isnan(recent_long_easy) else np.nan,
 
-                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_baseline_b1, 2) if not np.isnan(recent_baseline_b1) else np.nan,
-                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_baseline_b2, 2) if not np.isnan(recent_baseline_b2) else np.nan,
-                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_baseline_b3, 2) if not np.isnan(recent_baseline_b3) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[0]: round(recent_baseline_easy, 2) if not np.isnan(recent_baseline_easy) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[1]: round(recent_baseline_hard, 2) if not np.isnan(recent_baseline_hard) else np.nan,
+                    # sub_config.RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES[2]: round(recent_baseline_long, 2) if not np.isnan(recent_baseline_long) else np.nan,
 
                     sub_config.HASR_TL_COLUMN_NAMES[0]: round(hasr_tl, 2) if not np.isnan(hasr_tl) else np.nan,
                     sub_config.HASR_TL_COLUMN_NAMES[1]: round(hasr_tl_recent, 2) if not np.isnan(hasr_tl_recent) else np.nan,

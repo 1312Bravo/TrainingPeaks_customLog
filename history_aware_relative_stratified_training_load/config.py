@@ -7,7 +7,7 @@ RECENT_WINDOW = 21
 LAMBDA_BASE = 0.978
 HASR_TL_WEIGHTS = [0.15, 0.45, 0.4]
 QUANTILE_TL_MINUTE_HARD = 0.70
-QUANTILE_DURATION_LONG = 0.80
+QUANTILE_DURATION_LONG = 0.75
 AGG_VARIABLE = "Training load"
 AGG_VARIABLE_NAME_DICT = {
     "Training load": "TL"
@@ -26,48 +26,48 @@ HASR_TL_SHEET_NAME = f"HASR-{AGG_VARIABLE_NAME_DICT[AGG_VARIABLE]}"
 
 # Excel column names
 BASELINE_SLA_VALUE_COLUMN_NAMES = [
-     "Baseline B1",
-     "Baseline B2",
-     "Baseline B3"
+     "Baseline Easy",
+     "Baseline Hard",
+     "Baseline Long"
      ]
 
 BASELINE_SLA_PROPORTION_COLUMN_NAMES = [
-     "Baseline B1 prop. [%]",
-     "Baseline B2 prop. [%]",
-     "Baseline B3 prop. [%]"
+     "Baseline Easy prop. [%]",
+     "Baseline Hard prop. [%]",
+     "Baseline Long prop. [%]"
      ]
 
 RECENT_SLA_VALUE_COLUMN_NAMES = [
-     "Recent B1",
-     "Recent B2",
-     "Recent B3"
+     "Recent Easy",
+     "Recent Hard",
+     "Recent Long"
      ]
 
 RECENT_SLA_PROPORTION_COLUMN_NAMES = [
-     "Recent B1 prop. [%]",
-     "Recent B2 prop. [%]",
-     "Recent B3 prop. [%]"
+     "Recent Easy prop. [%]",
+     "Recent Hard prop. [%]",
+     "Recent Long prop. [%]"
      ]
 
 # Not in use
 BASELINE_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES = [
-    "Baseline B2/B1",
-    "Baseline B3/B2",
-    "Baseline B3/B1",
+    "Baseline Hard/Easy",
+    "Baseline Long/Hard",
+    "Baseline Long/Easy",
 ]
 
 # Not in use
 RECENT_WITHIN_WINDOW_SLA_COMPARISON_COLUMN_NAMES = [
-    "Recent B2/B1",
-    "Recent B3/B2",
-    "Recent B3/B1",
+    "Recent Hard/Easy",
+    "Recent Long/Hard",
+    "Recent Long/Easy",
 ]
 
 # Not in use
 RECENT_BASELINE_BUCKET_SLA_COMPARISON_COLUMN_NAMES = [
-     "Recent/Baseline B1",
-     "Recent/Baseline B2",
-     "Recent/Baseline B3",
+     "Recent/Baseline Easy",
+     "Recent/Baseline Hard",
+     "Recent/Baseline Long",
 ]
 
 HASR_TL_COLUMN_NAMES = [
@@ -77,8 +77,9 @@ HASR_TL_COLUMN_NAMES = [
 ]
 
 RECENT_SESSION_CLASS_COLUMN_NAMES = [
-     "Session Baseline Rank",
-     "Session Baseline Class"
+     "Session Baseline Overall Rank",
+     "Session Baseline Class",
+     "Session Baseline Class Rank",
 ]
 
 REQUIRED_COLUMNS_ORDER = ["Year", "Month", "Day", "Weekday", "Description", "Activity type", "Start time", "Aggregate variable"]
