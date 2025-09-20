@@ -43,8 +43,8 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     recent_window = sub_config.RECENT_WINDOW
     baseline_weights = sub_config.BASELINE_WINDOW_NORMALIZED_WEIGHTS
     recent_weights = sub_config.RECENT_WINDOW_NORMALIZED_WEIGHTS
-    quantile_low = sub_config.QUANTILE_LOW
-    quantile_high = sub_config.QUANTILE_HIGH
+    quantile_tl_minute_hard = sub_config.QUANTILE_TL_MINUTE_HARD
+    quantile_duration_long = sub_config.QUANTILE_DURATION_LONG
     hasrl_tl_weights = sub_config.HASR_TL_WEIGHTS
     
     # About
@@ -56,8 +56,8 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     logger.info(
         f"Baseline window = {baseline_window}, "
         f"Recent window = {recent_window}, "
-        f"Quantile low = {quantile_low}, "
-        f"Quantile high = {quantile_high}, "
+        f"Quantile TL per minute ~ Hard = {quantile_tl_minute_hard}, "
+        f"Quantile duration ~ Long = {quantile_duration_long}, "
         f"HASR-TL Weights = {hasrl_tl_weights}"
     )
 
@@ -95,16 +95,29 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     hasr_tl_data = hf.data_safe_convert_to_numeric(hasr_tl_data_raw.copy(deep=True))
 
     # Prepare data for calculations
-    activity_data["Datetime"] = pd.to_datetime(activity_data[["Year", "Month", "Day"]])
+    activity_data["Datetime"] = pd.to_datetime(
+        activity_data["Year"].astype(str) + "-" +
+        activity_data["Month"].astype(str) + "-" +
+        activity_data["Day"].astype(str) + " " +
+        activity_data["Start time"].fillna("00:00").astype(str),
+        format="%Y-%m-%d %H:%M",
+        errors="coerce"
+        )
+    
     activity_data = activity_data.sort_values(by="Datetime").reset_index(drop=True)
-    base_tl_data = (
-        activity_data
-        .groupby("Datetime")
-        .agg({sub_config.AGG_VARIABLE: "sum"})
-        .reset_index()
-    )
+    base_tl_data = activity_data[["Datetime", "Duration [h]", sub_config.AGG_VARIABLE]].copy()
+    base_tl_data[sub_config.AGG_VARIABLE+"_minute"] = base_tl_data[sub_config.AGG_VARIABLE] / (base_tl_data["Duration [h]"] * 60)
+    base_tl_data[sub_config.AGG_VARIABLE] = base_tl_data[sub_config.AGG_VARIABLE].fillna(base_tl_data[sub_config.AGG_VARIABLE].median())
+    base_tl_data[sub_config.AGG_VARIABLE+"_minute"] = base_tl_data[sub_config.AGG_VARIABLE+"_minute"].fillna(base_tl_data[sub_config.AGG_VARIABLE+"_minute"].median())
 
-    hasr_tl_data["Datetime"] = pd.to_datetime(hasr_tl_data[["Year", "Month", "Day"]])
+    hasr_tl_data["Datetime"] = pd.to_datetime(
+        hasr_tl_data["Year"].astype(str) + "-" +
+        hasr_tl_data["Month"].astype(str) + "-" +
+        hasr_tl_data["Day"].astype(str) + " " +
+        hasr_tl_data["Start time"].astype(str),
+        format="%Y-%m-%d %H:%M",
+        errors="coerce"
+        )
         
     # -------------------------------
     # We work based on Datetime
@@ -113,9 +126,9 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     base_tl_data = base_tl_data.set_index("Datetime").sort_index()
     hasr_tl_data = hasr_tl_data.set_index("Datetime").sort_index()
 
-    base_tl_data_datetimes = base_tl_data.index
-    last_hasr_tl_data_datetime = hasr_tl_data.index.max()
-    missing_hasr_tl_data_datetimes = base_tl_data.loc[base_tl_data.index > last_hasr_tl_data_datetime].index
+    base_tl_data_datetimes = base_tl_data.index.date
+    last_hasr_tl_data_datetime = hasr_tl_data.index.max().normalize()
+    missing_hasr_tl_data_datetimes = base_tl_data.loc[base_tl_data.index.normalize() > last_hasr_tl_data_datetime].index
 
     # -------------------------------
     # Calculate missing HASR-TL values
@@ -123,18 +136,19 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     logger.info("Calculate and write missing HASR-TL values")
 
     # Fill row by row
-    for date in missing_hasr_tl_data_datetimes:
-            logger.info("Date = {}".format(date.date()))
+    for date_full in missing_hasr_tl_data_datetimes:
+            date = date_full.date()
+            logger.info("Date = {}".format(date))
 
             # Baseline window ~> Baseline window immediately after the recent window
             first_baseline_date = date - pd.Timedelta(days=recent_window + baseline_window - 1)
             last_baseline_date = date - pd.Timedelta(days=recent_window)
-            logger.debug("Baseline dates: {} - {}".format(first_baseline_date.date(), last_baseline_date.date()))
+            logger.debug("Baseline dates: {} - {}".format(first_baseline_date, last_baseline_date))
 
             # Recent window ~> Recent window including "date"
             first_recent_date = date - pd.Timedelta(days=recent_window-1)
             last_recent_date = date
-            logger.debug("Recent dates: {} - {}".format(first_recent_date.date(), last_recent_date.date()))
+            logger.debug("Recent dates: {} - {}".format(first_recent_date, last_recent_date))
 
             # -------------------------------
             # BASELINE VALUES
@@ -147,23 +161,27 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                 # Baseline set
                 baseline_set = (
                     base_tl_data
-                    .loc[(base_tl_data.index >= first_baseline_date) & (base_tl_data.index <= last_baseline_date), agg_variable]
+                    .loc[
+                        (base_tl_data.index.normalize() >= pd.Timestamp(first_baseline_date)) & (base_tl_data.index.normalize() <= pd.Timestamp(last_baseline_date)), 
+                        [sub_config.AGG_VARIABLE, sub_config.AGG_VARIABLE+"_minute", "Duration [h]"]]
                     .sort_index(ascending=False)
                     .reset_index(drop=True)
                     )
                 
-                # Buckets sets & Weights
-                quantile_low_baseline = rtl_hf.get_weighted_quantile_value(quantile=quantile_low, values=baseline_set, weights=baseline_weights)
-                quantile_high_baseline = rtl_hf.get_weighted_quantile_value(quantile=quantile_high, values=baseline_set, weights=baseline_weights)
+                # Buckets sets & Weights ~> Sort out weights so they are duplicated if dates are duplicated ...
+                quantile_hard = rtl_hf.get_weighted_quantile_value(quantile=quantile_tl_minute_hard, values=baseline_set[sub_config.AGG_VARIABLE+"_minute"].to_numpy(), weights=baseline_weights)
+                b2_baseline_mask = baseline_set[sub_config.AGG_VARIABLE+"_minute"] > quantile_hard
+                b2_baseline_set = baseline_set.loc[b2_baseline_mask, sub_config.AGG_VARIABLE]
+                b2_baseline_weights = baseline_weights[b2_baseline_mask]
+                
+                quantile_long = rtl_hf.get_weighted_quantile_value(quantile=quantile_duration_long, values=baseline_set["Duration [h]"].to_numpy(), weights=baseline_weights)
+                b3_baseline_mask = (baseline_set[sub_config.AGG_VARIABLE+"_minute"] <= quantile_hard) & (baseline_set["Duration [h]"] > quantile_long)
+                b3_baseline_set = baseline_set.loc[b3_baseline_mask, sub_config.AGG_VARIABLE]
+                b3_baseline_weights = baseline_weights[b3_baseline_mask]
 
-                b1_baseline_set = baseline_set[baseline_set <= quantile_low_baseline]
-                b1_baseline_weights = baseline_weights[baseline_set <= quantile_low_baseline]
-
-                b2_baseline_set = baseline_set[(baseline_set > quantile_low_baseline) & (baseline_set <= quantile_high_baseline)]
-                b2_baseline_weights = baseline_weights[(baseline_set > quantile_low_baseline) & (baseline_set <= quantile_high_baseline)]
-
-                b3_baseline_set = baseline_set[baseline_set > quantile_high_baseline]
-                b3_baseline_weights = baseline_weights[baseline_set > quantile_high_baseline]
+                b1_baseline_mask = (baseline_set[sub_config.AGG_VARIABLE+"_minute"] <= quantile_hard) & (baseline_set["Duration [h]"] <= quantile_long)
+                b1_baseline_set = baseline_set.loc[b1_baseline_mask, sub_config.AGG_VARIABLE]
+                b1_baseline_weights = baseline_weights[b1_baseline_mask]
 
                 # Aggregate buckets values
                 baseline_b1_value = rtl_hf.get_weighted_mean(b1_baseline_set, b1_baseline_weights)
@@ -198,7 +216,9 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                 # Recent set
                 recent_set = (
                     base_tl_data
-                    .loc[(base_tl_data.index >= first_recent_date) & (base_tl_data.index <= last_recent_date), agg_variable]
+                    .loc[
+                        (base_tl_data.index >= pd.Timestamp(first_recent_date)) & (base_tl_data.index <= pd.Timestamp(last_recent_date)),  
+                        [sub_config.AGG_VARIABLE, sub_config.AGG_VARIABLE+"_minute", "Duration [h]"]]
                     .sort_index(ascending=False)
                     .reset_index(drop=True)
                 )
@@ -291,11 +311,15 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
 
             # Fill selected row baseline buckets values
             logger.debug("Preparing row to add")
+            activity_help = activity_data.query("Datetime == @date_full").iloc[0]
             new_date_hasr_tl_data_row_dict = {
-                    "Year": date.year,
-                    "Month": date.month,
-                    "Day": date.day,
+                    "Year": date_full.year,
+                    "Month": date_full.month,
+                    "Day": date_full.day,
+                    "Start time": date_full.strftime("%H:%M"),
                     "Weekday": date.strftime("%A"),
+                    "Description": activity_help["Description"],
+                    "Activity type": activity_help["Activity type"],
                     "Aggregate variable": agg_variable,
 
                     sub_config.BASELINE_SLA_VALUE_COLUMN_NAMES[0]: round(baseline_b1_value, 2),

@@ -6,8 +6,8 @@ BASELINE_WINDOW = 90
 RECENT_WINDOW = 21
 LAMBDA_BASE = 0.978
 HASR_TL_WEIGHTS = [0.15, 0.45, 0.4]
-QUANTILE_LOW = 0.70
-QUANTILE_HIGH = 0.90
+QUANTILE_TL_MINUTE_HARD = 0.70
+QUANTILE_DURATION_LONG = 0.80
 AGG_VARIABLE = "Training load"
 AGG_VARIABLE_NAME_DICT = {
     "Training load": "TL"
@@ -81,7 +81,7 @@ RECENT_SESSION_CLASS_COLUMN_NAMES = [
      "Session Baseline Class"
 ]
 
-REQUIRED_COLUMNS_ORDER = ["Year", "Month", "Day", "Weekday", "Aggregate variable"]
+REQUIRED_COLUMNS_ORDER = ["Year", "Month", "Day", "Weekday", "Description", "Activity type", "Start time", "Aggregate variable"]
 REQUIRED_COLUMNS_ORDER += RECENT_SESSION_CLASS_COLUMN_NAMES
 REQUIRED_COLUMNS_ORDER += HASR_TL_COLUMN_NAMES
 for i in [0,1,2]:

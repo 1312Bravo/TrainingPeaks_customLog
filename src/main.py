@@ -25,14 +25,14 @@ if __name__ == "__main__":
     logger.info("Go Main!")
     
     # Get and write basic Daily & Activity statistics for all selected users
-    for user in config.BASIC_DAILY_ACTIVITY_STATISTICS_USERS:
-        user_config = config.USER_CONFIGURATIONS[user]
-        get_write_basic_daily_activity_statistics(
-            garmin_email = user_config["garmin_email"], 
-            garmin_password = user_config["garmin_password"] , 
-            activity_log_file_name = user_config["gdrive_activity_log_filename"], 
-            daily_log_file_name = user_config["gdrive_daily_log_filename"]
-        )
+    # for user in config.BASIC_DAILY_ACTIVITY_STATISTICS_USERS:
+    #     user_config = config.USER_CONFIGURATIONS[user]
+    #     get_write_basic_daily_activity_statistics(
+    #         garmin_email = user_config["garmin_email"], 
+    #         garmin_password = user_config["garmin_password"] , 
+    #         activity_log_file_name = user_config["gdrive_activity_log_filename"], 
+    #         daily_log_file_name = user_config["gdrive_daily_log_filename"]
+    #     )
 
     # Get and write History Aware Relative Stratified Training Load for all selected users
     for user in config.HISTORY_AWARE_RELATIVE_STRATIFIED_ACTIVITY_LOG_USERS:
