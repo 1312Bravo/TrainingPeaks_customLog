@@ -385,7 +385,7 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                     "Year": date_full.year,
                     "Month": date_full.month,
                     "Day": date_full.day,
-                    "Start time": date_full.strftime("%H:%M"),
+                    "Start time": date_full.strftime("%H:%M") if date_full.strftime("%H:%M") != "00:00" else np.nan,
                     "Weekday": date.strftime("%A"),
                     "Description": activity_help["Description"],
                     "Activity type": activity_help["Activity type"],
