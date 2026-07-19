@@ -24,6 +24,11 @@ Required Python dependencies are listed in `requirements.txt`:
 - `garminconnect`
 - `gspread`
 
+Garmin auth note:
+
+- `garminconnect` was bumped from `0.2.25` to `0.3.6` after GitHub Actions hit a Garmin SSO `401 Unauthorized` during login.
+- If Actions still fails at Garmin login, the next likely fix is token-store based authentication instead of fresh email/password login on every run.
+
 Local development should use the Conda environment named `Sandbox`:
 
 - Python: `C:\Users\Urh\anaconda3\envs\Sandbox\python.exe`
