@@ -27,7 +27,10 @@ Required Python dependencies are listed in `requirements.txt`:
 Garmin auth note:
 
 - `garminconnect` was bumped from `0.2.25` to `0.3.6` after GitHub Actions hit a Garmin SSO `401 Unauthorized` during login.
-- If Actions still fails at Garmin login, the next likely fix is token-store based authentication instead of fresh email/password login on every run.
+- GitHub Actions then failed with `MFA Required but no prompt_mfa mechanism supplied`.
+- Detailed library notes live in `notes/garminconnect_library_notes.Rmd`; update that file as Garmin Connect issues are resolved.
+- The token-store approach was explored but paused after local token generation hit Garmin `429` rate limiting and no real MFA code was available.
+- Current branch is retesting from the previous-library baseline with `garminconnect==0.2.25`.
 
 Local development should use the Conda environment named `Sandbox`:
 

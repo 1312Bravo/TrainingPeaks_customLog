@@ -1,0 +1,202 @@
+---
+title: "garminconnect Library Notes"
+date: "2026-07-19"
+output: html_document
+---
+
+# Purpose
+
+This note tracks `garminconnect` library behavior and issues for the daily jobs in this repository.
+It is meant to be updated when authentication, endpoint, version, or compatibility issues appear.
+
+# Background
+
+The project uses the Python package `garminconnect` to read Garmin Connect data.
+This package is an unofficial wrapper around Garmin Connect web/mobile endpoints.
+It is not an official Garmin-supported API contract.
+
+Important consequence:
+
+- Garmin can change sign-in, MFA, SSO, token, bot-detection, or endpoint behavior without warning.
+- A version of `garminconnect` that worked before can stop working even if this project code has not changed.
+- GitHub Actions can be treated differently from a local computer because it runs from cloud infrastructure and cannot answer MFA prompts interactively.
+- Login problems can therefore come from Garmin SSO changes, account security rules, MFA requirements, rate limiting, or library compatibility.
+
+Useful references:
+
+- `garminconnect` package: <https://pypi.org/project/garminconnect/>
+- `garminconnect` source repository: <https://github.com/cyberjunky/python-garminconnect>
+- `garth` documentation: <https://garth.readthedocs.io/en/latest/getting-started/>
+
+# Current Project Auth Flow
+
+The daily jobs authenticate Garmin in `daily_statistics_job/main.py`:
+
+```python
+garminClient = Garmin(garmin_email, garmin_password)
+garminClient.login()
+```
+
+The credentials come from `.env` locally and from the GitHub secret `ENV_VARS` in GitHub Actions.
+
+For GitHub Actions, the workflow is:
+
+```yaml
+run: python daily_jobs/run_all.py
+```
+
+# Issue Log
+
+## 2026-07-19
+
+### What Failed
+
+The GitHub Actions daily job failed during Garmin authentication.
+
+Initial error with old dependency version:
+
+```text
+garth.exc.GarthHTTPError: Error in request: 401 Client Error: Unauthorized
+```
+
+This happened while calling:
+
+```python
+garminClient.login()
+```
+
+The failing URL was Garmin SSO:
+
+```text
+https://sso.garmin.com/sso/signin
+```
+
+### Dependency Version At Failure
+
+The project had:
+
+```text
+garminconnect==0.2.25
+```
+
+That version is old relative to current `garminconnect` releases and appears to use an authentication path that Garmin no longer accepted in GitHub Actions.
+
+### Change Made
+
+The project dependency was bumped to:
+
+```text
+garminconnect==0.3.6
+```
+
+This was changed in `requirements.txt`.
+
+The local Conda `Sandbox` environment was also upgraded to `garminconnect 0.3.6`.
+
+### Result After Bump
+
+The GitHub Actions error changed from `401 Unauthorized` to:
+
+```text
+garminconnect.exceptions.GarminConnectAuthenticationError:
+MFA Required but no prompt_mfa mechanism supplied
+```
+
+Interpretation:
+
+- The newer library got further in the Garmin login flow.
+- Garmin now requires MFA for this login.
+- GitHub Actions cannot answer an MFA prompt interactively.
+
+### Likely Required Fix
+
+Use Garmin token-store authentication for GitHub Actions.
+
+The newer `garminconnect` login supports a token store through:
+
+```python
+garminClient.login(tokenstore = ...)
+```
+
+It also reads the environment variable:
+
+```text
+GARMINTOKENS
+```
+
+if a token store is provided there.
+
+The likely flow is:
+
+1. Run a local helper script on a trusted machine.
+2. Complete Garmin MFA locally.
+3. Save Garmin tokens to `.garminconnect/garmin_tokens.json`.
+4. Add the content of that JSON file as a GitHub secret.
+5. In GitHub Actions, recreate the token file and set `GARMINTOKENS`.
+6. Let `garminconnect` load tokens before trying fresh email/password login.
+
+### Branch Used For Token-Store Work
+
+Token-store work is being done on:
+
+```text
+codex/garmin-mfa-tokenstore
+```
+
+### Work Started On Token-Store Approach
+
+The token-store approach explored these changes:
+
+- `daily_jobs/create_garmin_tokens.py`
+- `.gitignore` entries for `.garminconnect/` and `garmin_tokens.json`
+- GitHub Actions step that reads `GARMIN_TOKENS_JSON`
+- README notes for generating local Garmin tokens
+
+### Things Still To Verify
+
+- Generate local Garmin tokens successfully with MFA.
+- Confirm the token file content should be stored in GitHub secret `GARMIN_TOKENS_JSON`.
+- Confirm GitHub Actions can authenticate using `GARMINTOKENS`.
+- Confirm refreshed/rotated Garmin tokens remain valid across scheduled runs.
+- Decide whether token refresh persistence needs an additional workflow step or updated secret process.
+
+### Caution
+
+The Garmin token file grants persistent access to the Garmin account.
+Do not commit it.
+Do not print it in logs.
+Do not paste it into chat.
+Only store it as a GitHub secret or in a local ignored file.
+
+### Follow-Up: Restart From Previous Library Version
+
+After trying the token-helper direction locally, token generation did not succeed cleanly:
+
+```text
+mobile+cffi returned 429: Mobile login returned 429 -- IP rate limited by Garmin
+mobile+requests returned 429: Mobile login returned 429 -- IP rate limited by Garmin
+```
+
+The terminal then asked for `Garmin MFA code`, but no real MFA code was available.
+The entered value `429` was only the HTTP rate-limit status code, not an MFA code.
+
+Decision:
+
+- Stay on branch `codex/garmin-mfa-tokenstore`.
+- Keep these notes for the investigation.
+- Revert `requirements.txt` back to `garminconnect==0.2.25`.
+- Remove the token-store creation step from GitHub Actions for now.
+- Re-test from the previous-library baseline before deciding the next auth approach.
+- Remove public README instructions for `GARMIN_TOKENS_JSON` while the token-store approach is paused.
+
+# Open Questions
+
+- Does Garmin rotate the DI refresh token during GitHub Actions runs often enough that the GitHub secret needs manual refresh?
+- If tokens become stale, should the local helper be rerun and `GARMIN_TOKENS_JSON` updated?
+- Should the code explicitly pass `tokenstore` to `garminClient.login(...)`, or is relying on `GARMINTOKENS` clear enough?
+- Should the workflow fail early if `GARMIN_TOKENS_JSON` is missing if the token-store approach is resumed?
+
+# Update Notes
+
+When this issue changes, add a new dated section under `Issue Log`.
+Keep the latest status clear enough that future debugging does not need to rediscover the Garmin SSO/MFA history.
