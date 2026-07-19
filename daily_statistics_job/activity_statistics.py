@@ -9,7 +9,7 @@ if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
 # Import help functions
-from src import help_functions as hf
+from daily_jobs import help_functions as hf
 
 # -----------------------------------------------------
 # GO: Get & Prepare single day activity statistics

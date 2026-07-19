@@ -12,12 +12,12 @@ if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
 # Help functions & "Main" functions
-from src import config
-from basic_daily_activity_statistics.main import get_write_basic_daily_activity_statistics
-from history_aware_relative_stratified_training_load.main import prepare_calculate_write_hasr_tl
+from daily_jobs import config
+from daily_statistics_job.main import get_write_basic_daily_activity_statistics
+from hasr_tl_job.main import prepare_calculate_write_hasr_tl
 
 # Logging
-from src.log_config import setup_logger
+from daily_jobs.log_config import setup_logger
 logger = setup_logger(name=__name__)
 
 # GOGO!
