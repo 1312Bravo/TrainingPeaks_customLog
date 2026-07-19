@@ -4,14 +4,14 @@ Last reviewed: 2026-07-19
 
 ## Scope
 
-This repository maintains a Python automation for custom TrainingPeaks-style logs.
-The current working focus is the daily job in `basic_daily_activity_statistics`.
+This repository maintains Python automations for custom TrainingPeaks-style logs.
+The current working focus is the daily statistics job in `daily_statistics_job`.
 
 The repo has three main code areas:
 
-- `src`: shared configuration, Google Sheets helpers, logging, and the top-level runner.
-- `basic_daily_activity_statistics`: daily Garmin summary rows and per-activity rows.
-- `history_aware_relative_stratified_training_load`: downstream HASR-TL calculation based on the activity log.
+- `daily_jobs`: shared configuration, Google Sheets helpers, logging, and runner scripts for the daily job family.
+- `daily_statistics_job`: daily Garmin summary rows and per-activity rows.
+- `hasr_tl_job`: downstream HASR-TL calculation based on the activity log.
 
 ## Runtime And Secrets
 
@@ -39,9 +39,9 @@ Code Runner should run from `$workspaceRoot`.
 Path handling convention:
 
 - Do not use `os.getcwd()` to infer the repository root.
-- Resolve paths relative to `__file__`, for example `Path(__file__).resolve().parents[1]` in `src/config.py`.
-- This is needed because VS Code may run a file from its containing folder, especially when clicking the Run icon on `basic_daily_activity_statistics/main.py`.
-- `.env` and `googleDrive_secrets.json` are loaded from `src.config.REPO_ROOT`, not the current working directory.
+- Resolve paths relative to `__file__`, for example `Path(__file__).resolve().parents[1]` in `daily_jobs/config.py`.
+- This is needed because VS Code may run a file from its containing folder, especially when clicking the Run icon on `daily_statistics_job/main.py`.
+- `.env` and `googleDrive_secrets.json` are loaded from `daily_jobs.config.REPO_ROOT`, not the current working directory.
 
 Secrets are intentionally local and ignored by git:
 
@@ -50,7 +50,7 @@ Secrets are intentionally local and ignored by git:
 
 Do not print or commit secret values.
 
-`src/config.py` loads `.env`, builds `USER_CONFIGURATIONS`, creates Google Drive credentials from `googleDrive_secrets.json`, and defines sheet/tab names.
+`daily_jobs/config.py` loads `.env`, builds `USER_CONFIGURATIONS`, creates Google Drive credentials from `googleDrive_secrets.json`, and defines sheet/tab names.
 At review time, both configured jobs run for user `urh`.
 
 ## GitHub Actions
@@ -67,7 +67,7 @@ Behavior:
 - Creates `.env` from GitHub secret `ENV_VARS`.
 - Appends `ENV=prod` to `.env`.
 - Creates `googleDrive_secrets.json` from GitHub secret `GOOGLE_DRIVE_SECRETS`.
-- Runs `python src/main.py`.
+- Runs `python daily_jobs/run_all.py`.
 
 Schedule:
 
@@ -79,23 +79,28 @@ Schedule:
 
 Run path:
 
-1. `src/main.py`
+1. `daily_jobs/run_all.py`
 2. For each user in `config.BASIC_DAILY_ACTIVITY_STATISTICS_USERS`, call `get_write_basic_daily_activity_statistics(...)`.
 3. For each user in `config.HISTORY_AWARE_RELATIVE_STRATIFIED_ACTIVITY_LOG_USERS`, call `prepare_calculate_write_hasr_tl(...)`.
 
 This means the basic daily/activity job feeds the HASR-TL job through the Google Sheet activity log.
 
+Single-job runners:
+
+- `daily_jobs/run_daily_statistics_job.py`
+- `daily_jobs/run_hasr_tl_job.py`
+
 ## Basic Daily Activity Job
 
 Main function:
 
-- `basic_daily_activity_statistics/main.py::get_write_basic_daily_activity_statistics`
+- `daily_statistics_job/main.py::get_write_basic_daily_activity_statistics`
 
 Inputs:
 
 - Garmin email and password from `.env`.
 - Google Sheet filenames from `.env`.
-- Sheet names from `src/config.py`:
+- Sheet names from `daily_jobs/config.py`:
   - `Raw Daily Data`
   - `Raw Activity Data`
 
@@ -103,7 +108,7 @@ Flow:
 
 1. Authenticate Garmin Connect.
 2. Authenticate Google Drive through `gspread.authorize(config.DRIVE_CREDENTIALS)`.
-3. Load existing daily and activity sheets with `src.help_functions.import_google_sheet`.
+3. Load existing daily and activity sheets with `daily_jobs.help_functions.import_google_sheet`.
 4. Determine missing daily dates from last sheet date + 1 through yesterday.
 5. For each missing daily date, call `get_prepare_single_day_daily_statistics` and append one row.
 6. Determine missing activity dates from last sheet date + 1 through yesterday.
@@ -115,7 +120,7 @@ The job assumes the Google Sheets already have at least one data row because it 
 
 File:
 
-- `basic_daily_activity_statistics/daily_statistics.py`
+- `daily_statistics_job/daily_statistics.py`
 
 Garmin endpoints used:
 
@@ -126,7 +131,7 @@ Garmin endpoints used:
 - `get_hill_score`
 - `get_endurance_score`
 
-Output columns are defined in `basic_daily_activity_statistics/config.py` as `DAILY_LOG_EXPECTED_HEADERS`.
+Output columns are defined in `daily_statistics_job/config.py` as `DAILY_LOG_EXPECTED_HEADERS`.
 
 Important behavior:
 
@@ -145,7 +150,7 @@ Risks to remember:
 
 File:
 
-- `basic_daily_activity_statistics/activity_statistics.py`
+- `daily_statistics_job/activity_statistics.py`
 
 Garmin endpoints used:
 
@@ -154,7 +159,7 @@ Garmin endpoints used:
 - `get_activity_splits`
 - `get_activity_details`
 
-Output columns are defined in `basic_daily_activity_statistics/config.py` as `ACTIVITY_LOG_EXPECTED_HEADERS`.
+Output columns are defined in `daily_statistics_job/config.py` as `ACTIVITY_LOG_EXPECTED_HEADERS`.
 
 Activity behavior:
 
@@ -179,7 +184,7 @@ Risks to remember:
 
 File:
 
-- `src/help_functions.py`
+- `daily_jobs/help_functions.py`
 
 Functions:
 
@@ -198,9 +203,9 @@ Risks to remember:
 
 Files:
 
-- `history_aware_relative_stratified_training_load/main.py`
-- `history_aware_relative_stratified_training_load/config.py`
-- `history_aware_relative_stratified_training_load/help_functions.py`
+- `hasr_tl_job/main.py`
+- `hasr_tl_job/config.py`
+- `hasr_tl_job/help_functions.py`
 
 Purpose:
 
@@ -211,7 +216,7 @@ Purpose:
 - Classifies recent sessions as Easy, Hard, or Long using weighted quantiles.
 
 The saved image `analysissaved_filed.png` is a plot of baseline and recent load weighting.
-The notebook `history_aware_relative_stratified_training_load/analysis.ipynb` explores weighting, training load distribution, HASR-TL, bucket diagnostics, and recent training classification.
+The notebook `hasr_tl_job/analysis.ipynb` explores weighting, training load distribution, HASR-TL, bucket diagnostics, and recent training classification.
 
 ## Git And Generated Files
 

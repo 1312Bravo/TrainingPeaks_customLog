@@ -6,7 +6,7 @@ if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
 # Configure logging
-from src.config import env
+from daily_jobs.config import env
 import logging
 
 def setup_logger(name=None, level=None):

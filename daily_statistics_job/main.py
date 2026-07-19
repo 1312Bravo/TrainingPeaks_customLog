@@ -18,14 +18,14 @@ if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
 # Import help functions
-from src import config
-from src import help_functions as hf
-from basic_daily_activity_statistics import config as sub_config
-from basic_daily_activity_statistics.daily_statistics import get_prepare_single_day_daily_statistics
-from basic_daily_activity_statistics.activity_statistics import get_prepare_single_day_activity_statistics
+from daily_jobs import config
+from daily_jobs import help_functions as hf
+from daily_statistics_job import config as sub_config
+from daily_statistics_job.daily_statistics import get_prepare_single_day_daily_statistics
+from daily_statistics_job.activity_statistics import get_prepare_single_day_activity_statistics
 
 # Logging
-from src.log_config import setup_logger
+from daily_jobs.log_config import setup_logger
 logger = setup_logger(name=__name__)
 
 # Silence third-party debug logs

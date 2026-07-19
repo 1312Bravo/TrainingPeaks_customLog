@@ -17,13 +17,13 @@ if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
 # Help functions & "Main" functions
-from src import config
-from src import help_functions as hf
-from history_aware_relative_stratified_training_load import config as sub_config
-from history_aware_relative_stratified_training_load import help_functions as rtl_hf
+from daily_jobs import config
+from daily_jobs import help_functions as hf
+from hasr_tl_job import config as sub_config
+from hasr_tl_job import help_functions as rtl_hf
 
 # Logging
-from src.log_config import setup_logger
+from daily_jobs.log_config import setup_logger
 logger = setup_logger(name=__name__)
 
 # Silence third-party debug logs
