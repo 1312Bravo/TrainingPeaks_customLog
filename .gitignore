@@ -1,4 +1,6 @@
 .env
 googleDrive_secrets.json
+.garminconnect/
+garmin_tokens.json
 __pycache__/
 *.pyc
