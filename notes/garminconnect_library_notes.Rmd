@@ -1,76 +1,44 @@
 # Garmin Connect library notes
 
-This project uses the third-party `garminconnect` Python library to read Garmin
-Connect data. It is not an official Garmin API client. The library depends on
-Garmin's web/mobile authentication and Connect API endpoints, so Garmin-side
-changes, bot protection, MFA, token rules, or rate limits can break our job even
-when our project code did not change.
-
-Useful references:
-
-- PyPI: https://pypi.org/project/garminconnect/
-- GitHub: https://github.com/cyberjunky/python-garminconnect
-- Related issue pattern: https://github.com/cyberjunky/python-garminconnect/issues/337
+This project uses the third-party `garminconnect` Python library to read data
+from Garmin Connect. This is not an official Garmin API, so Garmin login and
+token behavior can change outside our control.
 
 ## 2026-07-20
 
-### Problem
-
-The job runs locally from the `Sandbox` Conda environment after updating the
-Garmin password, but GitHub Actions fails during Garmin login with:
+GitHub Actions started failing during Garmin login with:
 
 ```text
 too many 429 error responses
 ```
 
-The failure happens at Garmin's OAuth/preauthorized login step from the
-GitHub-hosted runner. This suggests Garmin is rate-limiting or blocking the
-cloud runner login flow. Waiting overnight did not resolve it.
+Local runs still worked, so the problem was likely Garmin rate-limiting or
+blocking fresh logins from GitHub-hosted runners.
 
-### Direction
+Before this change, the GitHub job logged in to Garmin with email/password on
+every run. Now it restores a saved Garmin token file from GitHub Secrets and
+uses that tokenstore for authentication.
 
-We want GitHub Actions to avoid a fresh Garmin username/password login each day.
-The preferred direction is to use Garmin saved tokens/session storage:
+The code still passes Garmin email/password into `Garmin(...)`. This is okay:
+when `GARMINTOKENS` is set, `garminconnect` tries the tokenstore first. The
+email/password values are mainly fallback if tokens are missing or invalid.
 
-1. Create/refresh Garmin tokens locally where login works.
-2. Store the token data safely in GitHub Secrets.
-3. Restore token files in GitHub Actions before the daily job runs.
-4. Let `garminconnect` load/refresh tokens instead of doing a fresh login.
+We solved this by:
 
-Token generation should normally be a one-time setup step. The daily GitHub job
-should reuse the saved tokenstore and let the library refresh tokens when
-possible. We should only regenerate tokens locally and update the GitHub Secret
-if Garmin invalidates the saved tokens, the account security state changes, or
-the tokenstore stops working.
+- updating `garminconnect` from `0.2.25` to `0.3.6`
+- creating Garmin tokens locally in `.garminconnect/garmin_tokens.json`
+- storing those token contents in the GitHub secret `GARMIN_TOKENS_JSON`
+- restoring the token file in GitHub Actions before the job runs
+- making the daily statistics job use the saved tokenstore when available
 
-### Changes started on branch
+The job should now reuse Garmin tokens instead of doing a fresh Garmin
+username/password login every day.
 
-Branch: `garmin-token-session-auth`
+If Garmin authentication breaks again, regenerate tokens locally with:
 
-- Bumped `garminconnect` from `0.2.25` to `0.3.6`.
-- Added a small Garmin authentication helper in `daily_jobs/help_functions.py`.
-- The helper uses the `GARMINTOKENS` environment variable when present.
-- Wired the daily statistics job to use the helper.
-- Created a project-specific local Conda environment: `trainingpeaks_customlog`.
-- Installed project requirements in that environment and verified
-  `garminconnect 0.3.6` imports successfully.
-- Updated `.vscode/settings.json` so VS Code and Code Runner use
-  `trainingpeaks_customlog` instead of the older shared `Sandbox` environment.
-- Added `daily_jobs/create_garmin_tokens.py` for local tokenstore creation in
-  `.garminconnect`.
-- Local token generation created `.garminconnect/garmin_tokens.json`.
-- GitHub Actions should restore this file from a secret named
-  `GARMIN_TOKENS_JSON` and set `GARMINTOKENS=.garminconnect` before running the
-  job.
+```powershell
+C:\Users\Urh\anaconda3\envs\trainingpeaks_customlog\python.exe -u .\daily_jobs\create_garmin_tokens.py
+```
 
-### Still to do
-
-- Confirm the new local `trainingpeaks_customlog` environment can run the
-  project end-to-end.
-- Run local token generation:
-  `C:\Users\Urh\anaconda3\envs\trainingpeaks_customlog\python.exe -u .\daily_jobs\create_garmin_tokens.py`
-- Create/update GitHub Actions secret `GARMIN_TOKENS_JSON` with the exact
-  contents of local `.garminconnect/garmin_tokens.json`.
-- Test GitHub Actions from this branch.
-- If GitHub still gets Garmin `429`, avoid repeated retries and revisit the
-  token creation/refresh flow.
+Then update the `GARMIN_TOKENS_JSON` GitHub secret with the new contents of
+`.garminconnect/garmin_tokens.json`.
