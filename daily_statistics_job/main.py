@@ -5,7 +5,6 @@
 import pandas as pd
 import numpy as np
 import datetime
-from garminconnect import Garmin
 import gspread
 import contextlib
 from io import StringIO
@@ -53,8 +52,7 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
     # Garmin API
     logger.info("Authenticating Garmin Connect API")
     try:
-        garminClient = Garmin(garmin_email, garmin_password)
-        garminClient.login()
+        garminClient = hf.authenticate_garmin_connect_api(garmin_email, garmin_password)
     except Exception as e:
         logger.error(f"Error Authenticating Garmin Connect API: {e}")
         raise

@@ -30,5 +30,11 @@ jobs:
       - name: Create googleDrive_secrets.json
         run: echo '${{ secrets.GOOGLE_DRIVE_SECRETS }}' > googleDrive_secrets.json
 
+      - name: Create Garmin tokenstore
+        run: |
+          mkdir -p .garminconnect
+          echo '${{ secrets.GARMIN_TOKENS_JSON }}' > .garminconnect/garmin_tokens.json
+          echo "GARMINTOKENS=.garminconnect" >> .env
+
       - name: Run Python Script
         run: python daily_jobs/run_all.py
