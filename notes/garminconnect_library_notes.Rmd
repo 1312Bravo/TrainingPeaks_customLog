@@ -1,0 +1,44 @@
+# Garmin Connect library notes
+
+This project uses the third-party `garminconnect` Python library to read data
+from Garmin Connect. This is not an official Garmin API, so Garmin login and
+token behavior can change outside our control.
+
+## 2026-07-20
+
+GitHub Actions started failing during Garmin login with:
+
+```text
+too many 429 error responses
+```
+
+Local runs still worked, so the problem was likely Garmin rate-limiting or
+blocking fresh logins from GitHub-hosted runners.
+
+Before this change, the GitHub job logged in to Garmin with email/password on
+every run. Now it restores a saved Garmin token file from GitHub Secrets and
+uses that tokenstore for authentication.
+
+The code still passes Garmin email/password into `Garmin(...)`. This is okay:
+when `GARMINTOKENS` is set, `garminconnect` tries the tokenstore first. The
+email/password values are mainly fallback if tokens are missing or invalid.
+
+We solved this by:
+
+- updating `garminconnect` from `0.2.25` to `0.3.6`
+- creating Garmin tokens locally in `.garminconnect/garmin_tokens.json`
+- storing those token contents in the GitHub secret `GARMIN_TOKENS_JSON`
+- restoring the token file in GitHub Actions before the job runs
+- making the daily statistics job use the saved tokenstore when available
+
+The job should now reuse Garmin tokens instead of doing a fresh Garmin
+username/password login every day.
+
+If Garmin authentication breaks again, regenerate tokens locally with:
+
+```powershell
+C:\Users\Urh\anaconda3\envs\trainingpeaks_customlog\python.exe -u .\daily_jobs\create_garmin_tokens.py
+```
+
+Then update the `GARMIN_TOKENS_JSON` GitHub secret with the new contents of
+`.garminconnect/garmin_tokens.json`.

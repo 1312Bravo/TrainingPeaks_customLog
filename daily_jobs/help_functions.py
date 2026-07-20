@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import Tuple
 from gspread.worksheet import Worksheet 
+import os
 
 # Set up repository root path
 def set_up_repo_root_path():
@@ -20,6 +21,20 @@ def import_google_sheet(googleDrive_client, filename, sheet_name) -> Tuple[pd.Da
     dataframe = pd.DataFrame(data[1:], columns=data[0]) 
 
     return dataframe, sheet
+
+# Authenticate Garmin Connect API
+def authenticate_garmin_connect_api(garmin_email, garmin_password):
+    from garminconnect import Garmin
+
+    garminClient = Garmin(garmin_email, garmin_password)
+    garmin_tokenstore = os.getenv("GARMINTOKENS")
+
+    if garmin_tokenstore:
+        garminClient.login(tokenstore=garmin_tokenstore)
+    else:
+        garminClient.login()
+
+    return garminClient
 
 # Convert columns to numeric if possible (all are object ...)
 def safe_convert_to_numeric(x):

@@ -1,11 +1,11 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
-    "python.defaultInterpreterPath": "C:\\Users\\Urh\\anaconda3\\envs\\Sandbox\\python.exe",
+    "python.defaultInterpreterPath": "C:\\Users\\Urh\\anaconda3\\envs\\trainingpeaks_customlog\\python.exe",
     "python.terminal.activateEnvironment": true,
     "python.terminal.executeInFileDir": false,
     "code-runner.cwd": "$workspaceRoot",
     "code-runner.executorMap": {
-        "python": "C:\\Users\\Urh\\anaconda3\\envs\\Sandbox\\python.exe -u"
+        "python": "C:\\Users\\Urh\\anaconda3\\envs\\trainingpeaks_customlog\\python.exe -u"
     }
 }
