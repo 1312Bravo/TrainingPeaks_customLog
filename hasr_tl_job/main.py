@@ -136,6 +136,13 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
     # Calculate missing HASR-TL values
     # -------------------------------
     logger.info("Calculate and write missing HASR-TL values")
+    
+    # Identify existing rows to avoid duplicates
+    hasr_tl_data_keyColumns = ["Year", "Month", "Day", "Start time", "Description", "Activity type"]
+    hasr_tl_data_existingKeys = set(
+        hf.get_row_key(row, hasr_tl_data_keyColumns)
+        for _, row in hasr_tl_data.reset_index(drop=True).iterrows()
+    )
 
     # Fill row by row
     for date_full in missing_hasr_tl_data_datetimes:
@@ -438,9 +445,12 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
             logger.debug("Writing to HASR-TL data to sheet")
             with contextlib.redirect_stdout(StringIO()):
                 new_date_hasr_tl_data_row_dict = hf.clean_data(new_date_hasr_tl_data_row_dict)
-                new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=sub_config.REQUIRED_COLUMNS_ORDER)
-                new_date_hasr_tl_data_row_sheet_format = new_date_hasr_tl_data_row.values.tolist()
-                hasr_tl_data_sheet.append_rows(new_date_hasr_tl_data_row_sheet_format)  
+                hasr_tl_data_key = hf.get_row_key(new_date_hasr_tl_data_row_dict, hasr_tl_data_keyColumns)
+                if hasr_tl_data_key not in hasr_tl_data_existingKeys:
+                    new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=sub_config.REQUIRED_COLUMNS_ORDER)
+                    new_date_hasr_tl_data_row_sheet_format = new_date_hasr_tl_data_row.values.tolist()
+                    hasr_tl_data_sheet.append_rows(new_date_hasr_tl_data_row_sheet_format)
+                    hasr_tl_data_existingKeys.add(hasr_tl_data_key)
     
     logger.info("Done: Main ~ Analysis - History Aware Relative Stratified - Training Load")
 

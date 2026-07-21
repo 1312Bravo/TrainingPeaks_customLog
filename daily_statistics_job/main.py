@@ -98,6 +98,13 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
     # -----------------------------------------------------
     logger.info("Prepare and write daily statistics")
 
+    # Identify existing rows to avoid duplicates
+    dailyStats_keyColumns = ["Year", "Month", "Day"]
+    dailyStats_existingKeys = set(
+        hf.get_row_key(row, dailyStats_keyColumns)
+        for _, row in daily_log_df.iterrows()
+    )
+
     # Dates ~ From last date on sheet (+1) to yesterday (today + 1)
     dailyStats_lastDate = datetime.datetime(int(daily_log_df.iloc[-1]["Year"]), int(daily_log_df.iloc[-1]["Month"]), int(daily_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
     dailyStats_startDate = np.min([dailyStats_lastDate, datetime.date.today() - datetime.timedelta(days=1)])
@@ -119,9 +126,12 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
                 daily_log_sheet.insert_row(sub_config.DAILY_LOG_EXPECTED_HEADERS, index=1)
             with contextlib.redirect_stdout(StringIO()):
                 daily_log_raw = hf.clean_data(singleDay_dailyStats_dict)
-                daily_log_df = pd.DataFrame([daily_log_raw])
-                daily_log_sheetFormat = daily_log_df.values.tolist()
-                daily_log_sheet.append_rows(daily_log_sheetFormat)  
+                daily_log_key = hf.get_row_key(daily_log_raw, dailyStats_keyColumns)
+                if daily_log_key not in dailyStats_existingKeys:
+                    daily_log_df = pd.DataFrame([daily_log_raw])
+                    daily_log_sheetFormat = daily_log_df.values.tolist()
+                    daily_log_sheet.append_rows(daily_log_sheetFormat)
+                    dailyStats_existingKeys.add(daily_log_key)
 
     else:
         logger.debug("All daily statistics to {} (yesterday) already entered".format(dailyStats_endDate))
@@ -130,6 +140,13 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
     # Calculate and write activity statistics to Drive sheet
     # -----------------------------------------------------
     logger.info("Prepare and write activity statistics")
+    
+    # Identify existing rows to avoid duplicates
+    activityStats_keyColumns = ["Year", "Month", "Day", "Start time", "Description", "Activity type"]
+    activityStats_existingKeys = set(
+        hf.get_row_key(row, activityStats_keyColumns)
+        for _, row in activity_log_df.iterrows()
+    )
 
     # Dates ~ From last date on sheet (+1) to yesterday (today + 1)
     activityStats_lastDate = datetime.datetime(int(activity_log_df.iloc[-1]["Year"]), int(activity_log_df.iloc[-1]["Month"]), int(activity_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
@@ -153,9 +170,12 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
             for i in reversed(range(len(singleDay_activityStats_dict))):
                 with contextlib.redirect_stdout(StringIO()):
                     activity_log_raw = hf.clean_data(singleDay_activityStats_dict["activity_{}".format(i)])
-                    activity_log_df = pd.DataFrame([activity_log_raw])
-                    activity_log_sheetFormat = activity_log_df.values.tolist()
-                    activity_log_sheet.append_rows(activity_log_sheetFormat)
+                    activity_log_key = hf.get_row_key(activity_log_raw, activityStats_keyColumns)
+                    if activity_log_key not in activityStats_existingKeys:
+                        activity_log_df = pd.DataFrame([activity_log_raw])
+                        activity_log_sheetFormat = activity_log_df.values.tolist()
+                        activity_log_sheet.append_rows(activity_log_sheetFormat)
+                        activityStats_existingKeys.add(activity_log_key)
     
     else:
         logger.debug("All activity statistics to {} (yesterday) already entered".format(activityStats_endDate))

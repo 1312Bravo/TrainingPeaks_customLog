@@ -36,6 +36,10 @@ def authenticate_garmin_connect_api(garmin_email, garmin_password):
 
     return garminClient
 
+# Create row key for checking duplicates before writing to Google Sheets
+def get_row_key(row, key_columns):
+    return tuple(str(row.get(col, "")).strip() for col in key_columns)
+
 # Convert columns to numeric if possible (all are object ...)
 def safe_convert_to_numeric(x):
     if x == "":
