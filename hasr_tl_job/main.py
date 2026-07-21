@@ -449,7 +449,7 @@ def prepare_calculate_write_hasr_tl(garmin_email, activity_log_file_name):
                 if hasr_tl_data_key not in hasr_tl_data_existingKeys:
                     new_date_hasr_tl_data_row = pd.DataFrame([new_date_hasr_tl_data_row_dict], columns=sub_config.REQUIRED_COLUMNS_ORDER)
                     new_date_hasr_tl_data_row_sheet_format = new_date_hasr_tl_data_row.values.tolist()
-                    hasr_tl_data_sheet.append_rows(new_date_hasr_tl_data_row_sheet_format)
+                    hasr_tl_data_sheet.insert_rows(new_date_hasr_tl_data_row_sheet_format, row=2)
                     hasr_tl_data_existingKeys.add(hasr_tl_data_key)
     
     logger.info("Done: Main ~ Analysis - History Aware Relative Stratified - Training Load")

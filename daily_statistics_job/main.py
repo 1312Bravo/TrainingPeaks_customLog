@@ -106,7 +106,13 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
     )
 
     # Dates ~ From last date on sheet (+1) to yesterday (today + 1)
-    dailyStats_lastDate = datetime.datetime(int(daily_log_df.iloc[-1]["Year"]), int(daily_log_df.iloc[-1]["Month"]), int(daily_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
+    dailyStats_sheetDates = pd.to_datetime(
+        daily_log_df["Year"].astype(str) + "-" +
+        daily_log_df["Month"].astype(str) + "-" +
+        daily_log_df["Day"].astype(str),
+        errors="coerce"
+        )
+    dailyStats_lastDate = dailyStats_sheetDates.max().date() + datetime.timedelta(days=1)
     dailyStats_startDate = np.min([dailyStats_lastDate, datetime.date.today() - datetime.timedelta(days=1)])
     dailyStats_endDate = datetime.date.today() - datetime.timedelta(days=1)
     if dailyStats_startDate <= dailyStats_endDate:
@@ -130,7 +136,7 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
                 if daily_log_key not in dailyStats_existingKeys:
                     daily_log_df = pd.DataFrame([daily_log_raw])
                     daily_log_sheetFormat = daily_log_df.values.tolist()
-                    daily_log_sheet.append_rows(daily_log_sheetFormat)
+                    daily_log_sheet.insert_rows(daily_log_sheetFormat, row=2)
                     dailyStats_existingKeys.add(daily_log_key)
 
     else:
@@ -149,7 +155,13 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
     )
 
     # Dates ~ From last date on sheet (+1) to yesterday (today + 1)
-    activityStats_lastDate = datetime.datetime(int(activity_log_df.iloc[-1]["Year"]), int(activity_log_df.iloc[-1]["Month"]), int(activity_log_df.iloc[-1]["Day"])).date() + datetime.timedelta(days=1)
+    activityStats_sheetDates = pd.to_datetime(
+        activity_log_df["Year"].astype(str) + "-" +
+        activity_log_df["Month"].astype(str) + "-" +
+        activity_log_df["Day"].astype(str),
+        errors="coerce"
+        )
+    activityStats_lastDate = activityStats_sheetDates.max().date() + datetime.timedelta(days=1)
     activityStats_startDate = np.min([activityStats_lastDate, datetime.date.today() - datetime.timedelta(days=1)])
     activityStats_endDate = datetime.date.today() - datetime.timedelta(days=1)
     if activityStats_startDate <= activityStats_endDate:
@@ -174,7 +186,7 @@ def get_write_basic_daily_activity_statistics(garmin_email, garmin_password, act
                     if activity_log_key not in activityStats_existingKeys:
                         activity_log_df = pd.DataFrame([activity_log_raw])
                         activity_log_sheetFormat = activity_log_df.values.tolist()
-                        activity_log_sheet.append_rows(activity_log_sheetFormat)
+                        activity_log_sheet.insert_rows(activity_log_sheetFormat, row=2)
                         activityStats_existingKeys.add(activity_log_key)
     
     else:
