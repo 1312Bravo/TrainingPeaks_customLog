@@ -26,7 +26,7 @@ def is_owner() -> bool:
 def initialize_chat() -> None:
     """Create the in-browser chat history for the current Streamlit session."""
 
-    # This is temporary session memory.
+    # This is temporary session memory. 
     # Later we can decide what should be saved permanently, and whether saved chats belong only to full mode.
     if "agent_messages" not in st.session_state:
         st.session_state.agent_messages = [
