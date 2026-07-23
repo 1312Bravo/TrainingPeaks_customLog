@@ -7,6 +7,7 @@ Local Streamlit app for building a personal training platform.
 - `streamlit_app/` - the app source code
 - `docs/` - practical instructions for running and using the app
 - `notes/` - durable product decisions and requirements
+- `prompts/` - editable AI coach prompt files
 
 ## Run
 

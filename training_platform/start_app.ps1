@@ -1,5 +1,7 @@
 $ErrorActionPreference = "Stop"
 
+# Resolve paths from this script location so the launcher works even when it is
+# called from a different terminal folder.
 $platformRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $appFile = Join-Path $platformRoot "streamlit_app\app.py"
 $venvRoot = Join-Path $platformRoot ".venv"
@@ -16,11 +18,15 @@ if (-not (Test-Path -LiteralPath $appFile)) {
     throw "Could not find Streamlit app at: $appFile"
 }
 
+# Keep the app self-contained. The first run creates a local virtual
+# environment inside training_platform instead of requiring global Python setup.
 if (-not (Test-Path -LiteralPath $venvPython)) {
     Write-Host "Creating local Python environment..."
     & $python -m venv $venvRoot
 }
 
+# Install dependencies only when Streamlit is missing. This keeps normal starts
+# quick while still letting a fresh clone bootstrap itself.
 & $venvPython -m streamlit --version *> $null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Installing app dependencies..."
