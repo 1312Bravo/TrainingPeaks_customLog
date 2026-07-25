@@ -27,7 +27,7 @@ if (-not (Test-Path -LiteralPath $venvPython)) {
 
 # Install dependencies only when Streamlit is missing. This keeps normal starts
 # quick while still letting a fresh clone bootstrap itself.
-& $venvPython -m streamlit --version *> $null
+& $venvPython -c "import openai, pandas, streamlit" *> $null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Installing app dependencies..."
     & $venvPython -m pip install -r $requirements

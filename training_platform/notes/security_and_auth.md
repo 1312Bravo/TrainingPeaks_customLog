@@ -15,3 +15,7 @@
 - Full mode should unlock owner-only features and private data within the same general experience, rather than becoming a completely separate app.
 - The app should include an agent/chat window.
 - Until authentication and AI API access are configured, the chat window should not use private training context or pretend that responses are personalized.
+- Google login should use Streamlit OIDC auth through `.streamlit/secrets.toml`.
+- Real `.streamlit/secrets.toml` must stay ignored by git; only `.streamlit/secrets.toml.example` should be committed.
+- Public users should still be able to see demo mode without logging in.
+- Only `pecek.urh@gmail.com` should unlock full mode and private agent features.
