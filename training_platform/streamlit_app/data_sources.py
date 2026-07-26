@@ -212,6 +212,29 @@ def build_preview_table(sheet: dict, sheet_tab: dict) -> pd.DataFrame:
         return pd.DataFrame(padded_rows, columns=columns)
 
 
+# Loads all rows from one specific sheet tab CSV export when possible.
+# The coach context uses this fuller load instead of the 50-row dashboard preview.
+# Returns a dataframe with empty values normalized for text export.
+
+@st.cache_data(ttl=300)
+def load_sheet_tab_data(sheet: dict, sheet_tab: dict) -> pd.DataFrame:
+    try:
+        return pd.read_csv(sheet_tab["csv_url"]).fillna("")
+    except Exception:
+        columns = sheet["columns"] if sheet_tab.get("table_rows") == "default" else sheet_tab.get("columns", [])
+        table_rows = sheet["table_rows"] if sheet_tab.get("table_rows") == "default" else sheet_tab.get("table_rows", [])
+
+        if not columns:
+            return pd.DataFrame()
+
+        # Keep the fallback shape aligned with the live CSV columns used by the dashboard.
+        padded_rows = []
+        for row in table_rows:
+            padded_rows.append(row + [""] * (len(columns) - len(row)))
+
+        return pd.DataFrame(padded_rows, columns=columns)
+
+
 # Returns the configured tabs for one source sheet.
 # Older sheet metadata can still fall back to a single tab using the sheet-level CSV URL.
 # Returns a list of tab dictionaries.

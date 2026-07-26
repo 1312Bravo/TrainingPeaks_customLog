@@ -25,21 +25,22 @@ def read_prompt_file(file_name: str) -> str:
 
 
 # Builds the coach instructions from editable prompt files.
-# It adds a temporary privacy boundary until training context is deliberately connected.
+# It adds selected data context only when the app explicitly provides it.
 # Returns the full instruction text sent to the model.
 
-def build_coach_instructions(owner_mode: bool) -> str:
+def build_coach_instructions(owner_mode: bool, data_context: str = "") -> str:
     prompt_parts = [
         read_prompt_file("coach_system.md"),
         read_prompt_file("coach_response_style.md"),
         read_prompt_file("safety_boundaries.md"),
     ]
 
-    # This keeps the coach honest until we wire authenticated Google Sheet context.
-    context_boundary = "You do not currently have live access to the user's private training data inside this chat. Do not claim that you analyzed private sheets unless explicit context is provided."
+    # This keeps the coach honest: it can use only the context text the app sends.
+    context_boundary = "You do not have direct live access to Google Sheets or Google Docs. Use only the selected Data Context included in this prompt, and say clearly when the provided context is insufficient."
     mode_boundary = "The app is in full owner mode." if owner_mode else "The app is in demo mode. Keep answers generic and do not reference private user data."
+    data_context_block = data_context.strip()
 
-    return "\n\n".join([part for part in prompt_parts + [context_boundary, mode_boundary] if part])
+    return "\n\n".join([part for part in prompt_parts + [context_boundary, mode_boundary, data_context_block] if part])
 
 
 # ----------------------------------------------------------
@@ -111,11 +112,11 @@ def format_cost_caption(usage_summary: dict | None) -> str | None:
 # Coach Response
 # ----------------------------------------------------------
 
-# Calls the OpenAI API with the current chat history.
-# The model receives coach prompts plus the recent user/assistant messages.
+# Calls the OpenAI API with the current chat history and selected data context.
+# The model receives coach prompts, optional data context, and recent user/assistant messages.
 # Returns the assistant response text and usage metadata for cost display.
 
-def get_agent_response(owner_mode: bool) -> dict:
+def get_agent_response(owner_mode: bool, data_context: str = "") -> dict:
     api_key = get_openai_api_key()
 
     if not api_key:
@@ -128,7 +129,7 @@ def get_agent_response(owner_mode: bool) -> dict:
     try:
         response = client.responses.create(
             model=model,
-            instructions=build_coach_instructions(owner_mode),
+            instructions=build_coach_instructions(owner_mode, data_context),
             input=chat_messages,
         )
     except Exception as error:
