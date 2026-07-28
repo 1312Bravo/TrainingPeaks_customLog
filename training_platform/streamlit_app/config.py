@@ -27,6 +27,14 @@ MEMORY_ACTIONS = [
 ]
 STRUCTURED_NOTE_TOPIC_OPTIONS = [
     "Coach suggests topic",
+    "Recovery",
+    "Heart rate",
+    "Training load",
+    "Workout planning",
+    "Trail running skills",
+    "Race preparation",
+    "Nutrition",
+    "Gear",
     "New topic",
 ]
 

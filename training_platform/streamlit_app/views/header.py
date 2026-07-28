@@ -42,9 +42,20 @@ def render_page_header(owner_mode: bool) -> None:
     st.markdown(
         f'''
         <section class="tp-header">
-            <div class="tp-header-kicker">Training cockpit</div>
-            <h1 class="tp-header-title">Training Platform</h1>
-            <p class="tp-header-subtitle">{subtitle}</p>
+            <div class="tp-header-content">
+                <div>
+                    <div class="tp-header-kicker">Trail running cockpit</div>
+                    <h1 class="tp-header-title">Training Platform</h1>
+                    <p class="tp-header-subtitle">{subtitle}</p>
+                </div>
+                <svg class="tp-mountain-mark" viewBox="0 0 320 120" fill="none" aria-hidden="true">
+                    <path d="M18 96h284" />
+                    <path d="M28 92 82 34l34 42 24-28 44 48" />
+                    <path d="M126 92 202 18l92 78" />
+                    <path d="M202 18 220 58l20-18" />
+                    <path d="M82 34 92 70l24-12" />
+                </svg>
+            </div>
         </section>
         ''',
         unsafe_allow_html=True,

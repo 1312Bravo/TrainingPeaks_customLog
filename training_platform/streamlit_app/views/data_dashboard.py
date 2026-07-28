@@ -1,15 +1,49 @@
 import streamlit as st
 
 from config import DATA_TABLE_HEIGHT
-from data_sources import build_preview_table, find_sheet_by_title_part, get_sheet_tabs, get_visible_sheets
+from data_sources import build_preview_table, find_sheet_by_title_part, get_sheet_tabs, get_visible_sheets, load_sheet_tab_data
 
 
 # ----------------------------------------------------------
 # Data Dashboard View
 # ----------------------------------------------------------
 
-# Renders one Google Sheet panel with metadata, a scrollable table, and source link.
-# The table uses live CSV exports when reachable and falls back to bundled sample rows.
+# Renders one dataframe with the app's standard table sizing.
+# Sheet values are already loaded as display text, so this keeps rendering simple and predictable.
+# Returns nothing; it writes the dataframe to the page.
+
+def render_data_table(table, height: int) -> None:
+    st.dataframe(table, width="stretch", height=height, hide_index=True)
+
+
+# Builds a stable Streamlit key for repeated table buttons.
+# It keeps buttons unique across sheet panels and sheet tabs.
+# Returns a readable widget key.
+
+def build_table_button_key(sheet: dict, sheet_tab: dict) -> str:
+    key_parts = [sheet["title"], sheet_tab["title"]]
+    cleaned_parts = ["_".join(part.lower().split()) for part in key_parts]
+    return f"open_full_table_{'_'.join(cleaned_parts)}"
+
+
+# Shows one expanded in-app table dialog.
+# Google Sheets remain backend sources, while users inspect the table inside the app.
+# Returns nothing; it writes a modal table view.
+
+@st.dialog("Full table", width="large")
+def render_full_table_dialog(sheet_title: str, sheet_tab_title: str, table) -> None:
+    st.markdown(f"**{sheet_title} / {sheet_tab_title}**")
+
+    if table.empty:
+        st.info("This sheet tab is configured, but no table rows are available yet.")
+        return
+
+    st.caption(f"{len(table)} rows x {len(table.columns)} columns")
+    render_data_table(table, height=720)
+
+
+# Renders one Google Sheet-backed panel with tabs, a preview table, and an expanded table action.
+# The preview uses live CSV exports when reachable and falls back to bundled sample rows.
 # Returns nothing; it writes one panel to the page.
 
 def render_sheet_panel(sheet: dict | None) -> None:
@@ -28,9 +62,11 @@ def render_sheet_panel(sheet: dict | None) -> None:
                 if preview_table.empty:
                     st.info("This sheet tab is configured, but no preview rows are available yet.")
                 else:
-                    st.dataframe(preview_table, width="stretch", height=DATA_TABLE_HEIGHT, hide_index=True)
+                    render_data_table(preview_table, height=DATA_TABLE_HEIGHT)
 
-        st.link_button("Open Google Sheet", sheet["url"])
+                if st.button("Open full table", key=build_table_button_key(sheet, sheet_tab), icon=":material/open_in_full:", width="stretch"):
+                    full_table = load_sheet_tab_data(sheet, sheet_tab)
+                    render_full_table_dialog(sheet["title"], sheet_tab["title"], full_table)
 
 
 # Renders the top data dashboard area.

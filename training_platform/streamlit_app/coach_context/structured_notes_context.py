@@ -38,8 +38,8 @@ def read_structured_notes_text() -> str:
         document_id = extract_google_file_id(structured_notes_url)
         docs_service = build_google_service("docs", "v1")
         document = docs_service.documents().get(documentId=document_id).execute()
-    except Exception as error:
-        return f"Structured Notes could not be read: {error}"
+    except Exception:
+        return "Structured Notes could not be read. Check Google credentials and document sharing."
 
     body_content = document.get("body", {}).get("content", [])
     text = "".join(extract_text_from_element(element) for element in body_content).strip()

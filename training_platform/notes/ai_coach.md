@@ -53,3 +53,17 @@
 - First implementation should send filtered raw rows with all columns for selected row-based sources, not summaries.
 - Later we can add summary tables or column pruning if raw context becomes too expensive, slow, or noisy.
 - `Structured Notes` should be readable as context, but it is topic-based and not date-filtered yet.
+- Data context size/cost estimates should be shown as approximate data-context input estimates only.
+- Actual API cost after the answer remains the better billing visibility because it includes prompts, chat history, output tokens, and provider token accounting.
+- `Chat Archive & Create Notes` should first answer the user, then create a general reusable structured note from the Q&A, then append it to the Structured Notes Google Doc.
+- Structured notes should avoid user-specific diary detail by default and preserve durable coaching guidance, decision rules, warning signs, and practical next actions.
+- First Structured Notes writing can append topic-labeled blocks; smarter merging into existing topic sections can come later.
+- The visible coach answer should use the same language as the user's question unless the user asks for another language.
+- Saved Coach Chat Memory and Structured Notes should always be written in English.
+- If the user asks in another language, translate the question and coach answer to English before saving to Coach Chat Memory or generating Structured Notes.
+- Data-context cost estimates are only approximate selected-context input estimates; full API cost depends on prompts, chat history, model reasoning, output length, and provider token accounting.
+- Coach answers should appear before slower memory work finishes.
+- Chat Archive and Structured Notes writes can run as a background memory job after the visible answer is added to the chat.
+- The app should have a native `Structured notes` tab that reads from the Structured Notes Google Doc, so notes feel like they live inside the app even though Google Docs remains the storage layer.
+- Structured Notes should be browsable by topic, with focused selected-topic/subtopic display instead of one full-width document dump.
+- Coach chat controls should keep the same options but group them by workflow: `Before answer` for Data context and `After answer` for Memory action.

@@ -22,8 +22,8 @@ CHAT_ARCHIVE_HEADERS = [
     "User Email",
     "Memory Action",
     "Structured Topic",
-    "Question",
-    "Coach Answer",
+    "Question EN",
+    "Coach Answer EN",
     "Model",
     "Input Tokens",
     "Output Tokens",
@@ -46,6 +46,25 @@ GOOGLE_MEMORY_SCOPES = [
 
 def build_memory_result(ok: bool, status: str, message: str) -> dict:
     return {"ok": ok, "status": status, "message": message}
+
+
+# Converts common Google API failures into user-facing setup messages.
+# Raw Google errors can be long and noisy, so the UI should show the useful next step.
+# Returns a short message.
+
+def format_google_api_error(error: Exception, action_name: str) -> str:
+    error_text = str(error)
+
+    if "docs.googleapis.com" in error_text and "SERVICE_DISABLED" in error_text:
+        return f"{action_name} failed because Google Docs API is not enabled in the Google Cloud project."
+
+    if "sheets.googleapis.com" in error_text and "SERVICE_DISABLED" in error_text:
+        return f"{action_name} failed because Google Sheets API is not enabled in the Google Cloud project."
+
+    if "403" in error_text:
+        return f"{action_name} failed because the service account does not have access yet."
+
+    return f"{action_name} failed. Check Google credentials, API enablement, and file sharing."
 
 
 # ----------------------------------------------------------
@@ -170,21 +189,80 @@ def append_chat_archive(question: str, answer: str, owner_mode: bool, user_email
             body={"values": [row]},
         ).execute()
     except Exception as error:
-        return build_memory_result(False, "failed", f"Chat archive write failed: {error}")
+        return build_memory_result(False, "failed", format_google_api_error(error, "Chat archive write"))
 
     return build_memory_result(True, "saved", "Saved to Chat Archive.")
 
 
 # ----------------------------------------------------------
-# Structured Notes Placeholder
+# Structured Notes Writes
 # ----------------------------------------------------------
 
-# Checks whether the structured notes doc is configured.
-# The first version only links the doc; topic-aware editing comes after archive writing is proven.
+# Reads the final body insertion index for one Google Doc.
+# Google Docs insertText appends before the document's final trailing newline.
+# Returns the insertion index and optional revision ID.
+
+def get_document_append_state(docs_service, document_id: str) -> dict:
+    document = docs_service.documents().get(documentId=document_id).execute()
+    body_content = document.get("body", {}).get("content", [])
+
+    if not body_content:
+        return {"index": 1, "revision_id": document.get("revisionId")}
+
+    end_index = body_content[-1].get("endIndex", 1)
+
+    return {"index": max(1, end_index - 1), "revision_id": document.get("revisionId")}
+
+
+# Builds the text block appended to the Structured Notes Google Doc.
+# The note is topic-labeled but intentionally general, not a private training diary entry.
+# Returns plain text ready for Google Docs insertion.
+
+def build_structured_note_append_text(topic: str, note: str) -> str:
+    today = datetime.now(timezone.utc).date().isoformat()
+    clean_topic = topic.strip() or "General Coaching"
+    clean_note = note.strip()
+
+    return f"\n\n## {clean_topic}\nAdded: {today}\n\n{clean_note}\n"
+
+
+# Appends one generated structured note to the active Structured Notes Google Doc.
+# This first version appends a new topic-labeled block; smarter section merging can come later.
 # Returns a small status dictionary for the chat UI.
 
-def check_structured_notes_target() -> dict:
-    if get_structured_notes_doc_url():
-        return build_memory_result(False, "planned", "Structured Notes doc is configured, but automatic note updates are not wired yet.")
+def append_structured_note(topic: str, note: str, owner_mode: bool) -> dict:
+    if not owner_mode:
+        return build_memory_result(False, "skipped", "Structured Notes were not saved because this chat is not in full owner mode.")
 
-    return build_memory_result(False, "skipped", "Structured Notes doc is not configured yet.")
+    structured_notes_url = get_structured_notes_doc_url()
+    if not structured_notes_url:
+        return build_memory_result(False, "skipped", "Structured Notes doc is not configured.")
+
+    try:
+        document_id = extract_google_file_id(structured_notes_url)
+        docs_service = build_google_service("docs", "v1")
+        append_state = get_document_append_state(docs_service, document_id)
+        request_body = {
+            "requests": [
+                {
+                    "insertText": {
+                        "location": {
+                            "index": append_state["index"],
+                        },
+                        "text": build_structured_note_append_text(topic, note),
+                    }
+                }
+            ],
+        }
+
+        if append_state["revision_id"]:
+            request_body["writeControl"] = {"requiredRevisionId": append_state["revision_id"]}
+
+        docs_service.documents().batchUpdate(
+            documentId=document_id,
+            body=request_body,
+        ).execute()
+    except Exception as error:
+        return build_memory_result(False, "failed", format_google_api_error(error, "Structured Notes write"))
+
+    return build_memory_result(True, "saved", f"Saved to Structured Notes under `{topic}`.")

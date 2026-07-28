@@ -5,6 +5,7 @@ from styles import apply_custom_styles
 from views.coach_chat import render_agent_chat
 from views.data_dashboard import render_data_dashboard
 from views.header import render_page_header, render_top_reference
+from views.structured_notes import render_structured_notes
 
 
 # ----------------------------------------------------------
@@ -43,7 +44,13 @@ with access_column:
 render_page_header(owner_mode)
 
 st.divider()
-render_data_dashboard(owner_mode)
+data_tab, notes_tab, chat_tab = st.tabs(["Training data", "Structured notes", "Coach chat"])
 
-st.divider()
-render_agent_chat(owner_mode)
+with data_tab:
+    render_data_dashboard(owner_mode)
+
+with notes_tab:
+    render_structured_notes(owner_mode)
+
+with chat_tab:
+    render_agent_chat(owner_mode)

@@ -189,6 +189,14 @@ DEMO_GOOGLE_SHEETS = [
 # Sheet Loading Helpers
 # ----------------------------------------------------------
 
+# Reads one Google Sheet CSV export as display text.
+# This prevents Pandas from turning integer columns with blanks into floats like 84.0.
+# Returns a dataframe with empty values normalized.
+
+def read_sheet_csv(csv_url: str, nrows: int | None = None) -> pd.DataFrame:
+    return pd.read_csv(csv_url, dtype=str, keep_default_na=False, nrows=nrows).fillna("")
+
+
 # Loads preview rows from one specific sheet tab CSV export when possible.
 # Falls back to static rows for raw tabs if the sheet is not reachable from the local app.
 # Returns a small dataframe suitable for st.dataframe.
@@ -196,7 +204,7 @@ DEMO_GOOGLE_SHEETS = [
 @st.cache_data(ttl=300)
 def build_preview_table(sheet: dict, sheet_tab: dict) -> pd.DataFrame:
     try:
-        return pd.read_csv(sheet_tab["csv_url"], nrows=50).fillna("")
+        return read_sheet_csv(sheet_tab["csv_url"], nrows=50)
     except Exception:
         columns = sheet["columns"] if sheet_tab.get("table_rows") == "default" else sheet_tab.get("columns", [])
         table_rows = sheet["table_rows"] if sheet_tab.get("table_rows") == "default" else sheet_tab.get("table_rows", [])
@@ -219,7 +227,7 @@ def build_preview_table(sheet: dict, sheet_tab: dict) -> pd.DataFrame:
 @st.cache_data(ttl=300)
 def load_sheet_tab_data(sheet: dict, sheet_tab: dict) -> pd.DataFrame:
     try:
-        return pd.read_csv(sheet_tab["csv_url"]).fillna("")
+        return read_sheet_csv(sheet_tab["csv_url"])
     except Exception:
         columns = sheet["columns"] if sheet_tab.get("table_rows") == "default" else sheet_tab.get("columns", [])
         table_rows = sheet["table_rows"] if sheet_tab.get("table_rows") == "default" else sheet_tab.get("table_rows", [])

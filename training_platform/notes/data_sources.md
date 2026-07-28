@@ -15,5 +15,7 @@
 - Table previews should load from the actual sheet source when possible, so newly added columns do not appear empty because of stale hardcoded preview rows.
 - Statistics panels should support multiple source tabs per Google Sheet, so activity data can show both raw activity rows and HASR-TL, and daily data can grow with additional tabs later.
 - Each app sheet tab should have its own CSV/export source so the preview can load the correct Google Sheet tab instead of only the first sheet.
+- Google Sheets should be treated as backend data sources; users should inspect fuller tables through in-app table views instead of prominent Google Sheet links.
+- Table values should preserve the sheet-visible text where possible, so integer-like values do not become float-looking values such as `84.0` only because a column has blanks.
 - The agent should eventually be able to use these Google Sheets as context.
 - Agent access to sheet contents should be implemented only through secure/authenticated access and should respect demo/full mode privacy.

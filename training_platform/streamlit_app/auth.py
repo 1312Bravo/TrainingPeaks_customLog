@@ -73,7 +73,7 @@ def render_auth_controls() -> None:
             )
 
         with button_column:
-            st.button("Log out", on_click=st.logout, use_container_width=True)
+            st.button("Log out", on_click=st.logout, width="stretch")
     else:
         label_column, button_column = st.columns([2.2, 1], gap="small")
 
@@ -89,4 +89,4 @@ def render_auth_controls() -> None:
             )
 
         with button_column:
-            st.button("Log in", on_click=st.login, use_container_width=True)
+            st.button("Log in", on_click=st.login, width="stretch")
