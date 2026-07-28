@@ -67,3 +67,9 @@
 - The app should have a native `Structured notes` tab that reads from the Structured Notes Google Doc, so notes feel like they live inside the app even though Google Docs remains the storage layer.
 - Structured Notes should be browsable by topic, with focused selected-topic/subtopic display instead of one full-width document dump.
 - Coach chat controls should keep the same options but group them by workflow: `Before answer` for Data context and `After answer` for Memory action.
+- Coach chat should expose model, effort, and speed controls, but defaults should preserve the previous hardcoded behavior unless changed for one question.
+- Model selection should default to the configured OpenAI model, currently `gpt-5-mini` unless overridden by local/deployment configuration.
+- Effort should default to `Default`, which means the app does not send an explicit reasoning-effort setting.
+- Speed should default to `Default`, which means the app uses the normal coach response style without an extra speed/detail instruction.
+- Data context controls should be collapsed by default so the chat input stays compact.
+- Full-mode `After answer` should default to `Chat Archive`, because this quietly builds useful memory without creating structured notes every time.

@@ -16,6 +16,35 @@ PROMPTS_ROOT = APP_ROOT / "prompts"
 DEFAULT_OPENAI_MODEL = "gpt-5-mini"
 DATA_TABLE_HEIGHT = 320
 DEFAULT_MEMORY_ENV = "dev"
+COACH_MODEL_OPTIONS = [
+    "gpt-5-mini",
+    "gpt-5",
+    "gpt-5-nano",
+]
+COACH_REASONING_EFFORT_OPTIONS = [
+    "Default",
+    "Minimal",
+    "Low",
+    "Medium",
+    "High",
+]
+COACH_SPEED_OPTIONS = [
+    "Default",
+    "Fast",
+    "Balanced",
+    "Thorough",
+]
+COACH_SPEED_INSTRUCTIONS = {
+    "Default": "",
+    "Fast": "Prioritize a shorter, direct answer with only the most important practical next step.",
+    "Balanced": "Give a balanced answer with enough reasoning to be useful, but avoid unnecessary detail.",
+    "Thorough": "Think more carefully and give a fuller answer with assumptions, reasoning, and practical tradeoffs.",
+}
+COACH_SPEED_VERBOSITY = {
+    "Fast": "low",
+    "Balanced": "medium",
+    "Thorough": "high",
+}
 MEMORY_ENV_LABELS = {
     "dev": "Dev",
     "prod": "Prod",
@@ -25,6 +54,7 @@ MEMORY_ACTIONS = [
     "Chat Archive",
     "Chat Archive & Create Notes",
 ]
+DEFAULT_MEMORY_ACTION = "Chat Archive"
 STRUCTURED_NOTE_TOPIC_OPTIONS = [
     "Coach suggests topic",
     "Recovery",
@@ -62,6 +92,17 @@ load_dotenv(APP_ROOT / ".env")
 
 def get_openai_model() -> str:
     return os.getenv("OPENAI_MODEL") or DEFAULT_OPENAI_MODEL
+
+
+# Builds the selectable coach model list.
+# The configured default model is always included first, even if it came from `.env`.
+# Returns a de-duplicated list for the chat UI.
+
+def get_coach_model_options() -> list[str]:
+    configured_model = get_openai_model()
+    model_options = [configured_model] + COACH_MODEL_OPTIONS
+
+    return list(dict.fromkeys(model_options))
 
 
 # Reads which coach memory target should be used.

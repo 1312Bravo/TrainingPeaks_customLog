@@ -5,7 +5,7 @@ import re
 import streamlit as st
 from openai import OpenAI
 
-from config import MODEL_PRICES_PER_1M_TOKENS, PROMPTS_ROOT, get_openai_model
+from config import COACH_SPEED_INSTRUCTIONS, COACH_SPEED_VERBOSITY, MODEL_PRICES_PER_1M_TOKENS, PROMPTS_ROOT, get_openai_model
 
 
 # ----------------------------------------------------------
@@ -30,7 +30,7 @@ def read_prompt_file(file_name: str) -> str:
 # It adds selected data context only when the app explicitly provides it.
 # Returns the full instruction text sent to the model.
 
-def build_coach_instructions(owner_mode: bool, data_context: str = "") -> str:
+def build_coach_instructions(owner_mode: bool, data_context: str = "", speed: str = "Default") -> str:
     prompt_parts = [
         read_prompt_file("coach_system.md"),
         read_prompt_file("coach_response_style.md"),
@@ -41,9 +41,10 @@ def build_coach_instructions(owner_mode: bool, data_context: str = "") -> str:
     context_boundary = "You do not have direct live access to Google Sheets or Google Docs. Use only the selected Data Context included in this prompt, and say clearly when the provided context is insufficient."
     mode_boundary = "The app is in full owner mode." if owner_mode else "The app is in demo mode. Keep answers generic and do not reference private user data."
     language_boundary = "Answer in the same language as the user's latest message unless the user explicitly asks for another language."
+    speed_instruction = COACH_SPEED_INSTRUCTIONS.get(speed, "")
     data_context_block = data_context.strip()
 
-    return "\n\n".join([part for part in prompt_parts + [context_boundary, mode_boundary, language_boundary, data_context_block] if part])
+    return "\n\n".join([part for part in prompt_parts + [context_boundary, mode_boundary, language_boundary, speed_instruction, data_context_block] if part])
 
 
 # ----------------------------------------------------------
@@ -162,22 +163,29 @@ def format_context_estimate_caption(context_estimate: dict | None) -> str | None
 # The model receives coach prompts, optional data context, and recent user/assistant messages.
 # Returns the assistant response text and usage metadata for cost display.
 
-def get_agent_response(owner_mode: bool, data_context: str = "") -> dict:
+def get_agent_response(owner_mode: bool, data_context: str = "", model: str | None = None, reasoning_effort: str = "Default", speed: str = "Default") -> dict:
     api_key = get_openai_api_key()
 
     if not api_key:
         return {"content": "The chat UI is ready, but `OPENAI_API_KEY` is not configured yet. Add the key locally and restart the app to enable real coach replies.", "usage": None}
 
     client = OpenAI(api_key=api_key)
-    model = get_openai_model()
+    model = model or get_openai_model()
     chat_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.agent_messages]
+    response_parameters = {
+        "model": model,
+        "instructions": build_coach_instructions(owner_mode, data_context, speed),
+        "input": chat_messages,
+    }
+
+    if reasoning_effort != "Default":
+        response_parameters["reasoning"] = {"effort": reasoning_effort.lower()}
+
+    if speed in COACH_SPEED_VERBOSITY:
+        response_parameters["text"] = {"verbosity": COACH_SPEED_VERBOSITY[speed]}
 
     try:
-        response = client.responses.create(
-            model=model,
-            instructions=build_coach_instructions(owner_mode, data_context),
-            input=chat_messages,
-        )
+        response = client.responses.create(**response_parameters)
     except Exception as error:
         return {"content": f"The coach API call failed: {error}", "usage": None}
 

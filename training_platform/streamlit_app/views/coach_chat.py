@@ -1,101 +1,15 @@
-import threading
-import uuid
-
 import streamlit as st
 
-from ai_coach import estimate_input_text_cost, format_context_estimate_caption, format_cost_caption, generate_structured_note, get_agent_response, normalize_exchange_for_memory
+from ai_coach import estimate_input_text_cost, format_context_estimate_caption, format_cost_caption, get_agent_response
 from coach_context.context_builder import build_data_context, describe_data_context
 from coach_context.context_options import DATA_CONTEXT_SOURCES, DATA_CONTEXT_WINDOWS, DEFAULT_DATA_CONTEXT_SOURCES, DEFAULT_DATA_CONTEXT_WINDOW, DataContextSettings
-from config import MEMORY_ACTIONS, STRUCTURED_NOTE_TOPIC_OPTIONS, get_memory_environment_label, get_openai_model
-from memory.coach_google_memory import append_chat_archive, append_structured_note
+from config import COACH_REASONING_EFFORT_OPTIONS, COACH_SPEED_OPTIONS, DEFAULT_MEMORY_ACTION, MEMORY_ACTIONS, STRUCTURED_NOTE_TOPIC_OPTIONS, get_coach_model_options, get_memory_environment_label, get_openai_model
+from memory.background_jobs import get_memory_job_status, start_memory_job
 
 
 # ----------------------------------------------------------
 # Coach Chat View
 # ----------------------------------------------------------
-
-MEMORY_JOBS = {}
-MEMORY_JOBS_LOCK = threading.Lock()
-
-
-# ----------------------------------------------------------
-# Background Memory Jobs
-# ----------------------------------------------------------
-
-# Stores the latest status for one background memory job.
-# The chat renderer reads this registry on later Streamlit reruns.
-# Returns nothing; it updates the in-memory registry.
-
-def set_memory_job_status(job_id: str, status: str, results: list[dict] | None = None, structured_note_usage: dict | None = None, memory_language_usage: dict | None = None) -> None:
-    with MEMORY_JOBS_LOCK:
-        MEMORY_JOBS[job_id] = {
-            "status": status,
-            "results": results or [],
-            "structured_note_usage": structured_note_usage,
-            "memory_language_usage": memory_language_usage,
-        }
-
-
-# Reads the current status for one background memory job.
-# Missing jobs can happen after a server reload, so the UI handles that gently.
-# Returns a status dictionary or None.
-
-def get_memory_job_status(job_id: str | None) -> dict | None:
-    if not job_id:
-        return None
-
-    with MEMORY_JOBS_LOCK:
-        return MEMORY_JOBS.get(job_id)
-
-
-# Runs English normalization, Chat Archive writing, and optional Structured Notes writing after the coach answer is visible.
-# This function must not call Streamlit UI APIs because it runs in a background thread.
-# Returns nothing; it writes status into MEMORY_JOBS.
-
-def run_memory_job(job_id: str, question: str, answer: str, owner_mode: bool, user_email: str | None, memory_action: str, structured_topic: str | None, answer_usage: dict | None) -> None:
-    results = []
-    structured_note_usage = None
-    memory_language_usage = None
-    memory_question = question
-    memory_answer = answer
-
-    try:
-        english_memory = normalize_exchange_for_memory(question, answer)
-        memory_question = english_memory["question_en"]
-        memory_answer = english_memory["answer_en"]
-        memory_language_usage = english_memory.get("usage")
-
-        if not english_memory["ok"]:
-            results.append({"ok": False, "status": "warning", "message": f"English memory normalization had a problem, so the original text was used: {english_memory['error']}"})
-
-        results.append(append_chat_archive(memory_question, memory_answer, owner_mode, user_email, memory_action, structured_topic, answer_usage))
-
-        if memory_action == "Chat Archive & Create Notes":
-            structured_note = generate_structured_note(memory_question, memory_answer, structured_topic)
-            structured_note_usage = structured_note.get("usage")
-
-            if structured_note["ok"]:
-                results.append(append_structured_note(structured_note["topic"], structured_note["note"], owner_mode))
-            else:
-                results.append({"ok": False, "status": "failed", "message": f"Structured note generation failed: {structured_note['error']}"})
-
-        set_memory_job_status(job_id, "done", results, structured_note_usage, memory_language_usage)
-    except Exception as error:
-        results.append({"ok": False, "status": "failed", "message": f"Background memory save failed: {error}"})
-        set_memory_job_status(job_id, "failed", results, structured_note_usage, memory_language_usage)
-
-
-# Starts a background memory job for one answered coach message.
-# The app can show the answer immediately while memory work continues.
-# Returns the job id used by the renderer.
-
-def start_memory_job(question: str, answer: str, owner_mode: bool, user_email: str | None, memory_action: str, structured_topic: str | None, answer_usage: dict | None) -> str:
-    job_id = str(uuid.uuid4())
-    set_memory_job_status(job_id, "running")
-    worker = threading.Thread(target=run_memory_job, args=(job_id, question, answer, owner_mode, user_email, memory_action, structured_topic, answer_usage), daemon=True)
-    worker.start()
-
-    return job_id
 
 
 # Renders one chat message with optional API usage/cost metadata.
@@ -187,7 +101,7 @@ def get_current_user_email() -> str | None:
 # This keeps the input form and chat history rendering separate.
 # Returns nothing; it updates Streamlit session state.
 
-def send_agent_message(prompt: str, owner_mode: bool, memory_action: str, structured_topic: str | None, data_context_settings: DataContextSettings) -> None:
+def send_agent_message(prompt: str, owner_mode: bool, memory_action: str, structured_topic: str | None, data_context_settings: DataContextSettings, coach_settings: dict) -> None:
     clean_prompt = prompt.strip()
 
     if not clean_prompt:
@@ -198,8 +112,8 @@ def send_agent_message(prompt: str, owner_mode: bool, memory_action: str, struct
 
     with st.spinner("Coach is reading context and thinking..."):
         data_context = build_data_context(owner_mode, data_context_settings)
-        data_context_estimate = estimate_input_text_cost(get_openai_model(), data_context)
-        response = get_agent_response(owner_mode, data_context)
+        data_context_estimate = estimate_input_text_cost(coach_settings["model"], data_context)
+        response = get_agent_response(owner_mode, data_context, coach_settings["model"], coach_settings["reasoning_effort"], coach_settings["speed"])
 
     memory_results = []
     memory_job_id = None
@@ -233,10 +147,9 @@ def send_agent_message(prompt: str, owner_mode: bool, memory_action: str, struct
 # These controls decide what source data is sent to the coach before it answers.
 # Returns the selected data context settings.
 
-def render_data_context_controls(owner_mode: bool) -> DataContextSettings:
-    st.markdown("**Before answer**")
-    st.caption("Choose what data the coach can read for this question.")
-    window = st.selectbox("Data window", DATA_CONTEXT_WINDOWS, index=DATA_CONTEXT_WINDOWS.index(DEFAULT_DATA_CONTEXT_WINDOW))
+def render_data_context_controls(owner_mode: bool, model: str) -> DataContextSettings:
+    st.markdown("**Data context**")
+    window = st.selectbox("Window", DATA_CONTEXT_WINDOWS, index=DATA_CONTEXT_WINDOWS.index(DEFAULT_DATA_CONTEXT_WINDOW))
 
     if window == "No data":
         st.caption("No sheet or notes data will be sent to the coach.")
@@ -251,7 +164,7 @@ def render_data_context_controls(owner_mode: bool) -> DataContextSettings:
 
     data_context_settings = DataContextSettings(window=window, sources=sources)
     data_context = build_data_context(owner_mode, data_context_settings)
-    context_estimate = estimate_input_text_cost(get_openai_model(), data_context)
+    context_estimate = estimate_input_text_cost(model, data_context)
     context_estimate_caption = format_context_estimate_caption(context_estimate)
 
     if context_estimate_caption:
@@ -260,14 +173,31 @@ def render_data_context_controls(owner_mode: bool) -> DataContextSettings:
     return data_context_settings
 
 
+# Renders model and response behavior controls for the current coach question.
+# Defaults preserve the original hardcoded app behavior unless the user changes them.
+# Returns a small dictionary passed to the coach API call.
+
+def render_coach_settings_controls() -> dict:
+    model_options = get_coach_model_options()
+    model_column, effort_column, speed_column = st.columns([1.35, 1, 1], gap="small")
+
+    with model_column:
+        model = st.selectbox("Model", model_options, index=model_options.index(get_openai_model()))
+
+    with effort_column:
+        reasoning_effort = st.selectbox("Effort", COACH_REASONING_EFFORT_OPTIONS, index=COACH_REASONING_EFFORT_OPTIONS.index("Default"))
+
+    with speed_column:
+        speed = st.selectbox("Speed", COACH_SPEED_OPTIONS, index=COACH_SPEED_OPTIONS.index("Default"))
+
+    return {"model": model, "reasoning_effort": reasoning_effort, "speed": speed}
+
+
 # Renders the memory/action controls for the current coach question.
 # These controls decide what should happen with this specific question-answer pair later.
 # Returns the selected memory action and structured-note destination.
 
 def render_memory_controls(owner_mode: bool) -> tuple[str, str | None]:
-    st.markdown("**After answer**")
-    st.caption("Choose what should be saved after the coach replies.")
-
     if not owner_mode:
         st.caption("Memory writing is full-mode only. Demo chats are not saved.")
         return "No memory", None
@@ -275,7 +205,7 @@ def render_memory_controls(owner_mode: bool) -> tuple[str, str | None]:
     memory_label = get_memory_environment_label()
     st.caption(f"Memory target: {memory_label}")
 
-    memory_action = st.selectbox("What should happen with this answer?", MEMORY_ACTIONS, index=0)
+    memory_action = st.selectbox("Save mode", MEMORY_ACTIONS, index=MEMORY_ACTIONS.index(DEFAULT_MEMORY_ACTION))
 
     if memory_action != "Chat Archive & Create Notes":
         return memory_action, None
@@ -320,18 +250,21 @@ def render_agent_chat(owner_mode: bool) -> None:
         with st.container():
             st.markdown("**Ask the coach**")
 
-            with st.container(border=True):
-                data_context_settings = render_data_context_controls(owner_mode)
+            with st.expander("Coach settings", expanded=False):
+                coach_settings = render_coach_settings_controls()
 
-            with st.container(border=True):
+            with st.expander("Data context", expanded=False):
+                data_context_settings = render_data_context_controls(owner_mode, coach_settings["model"])
+
+            with st.expander("After answer", expanded=False):
                 memory_action, structured_topic = render_memory_controls(owner_mode)
 
             with st.form("coach_message_form", clear_on_submit=True):
                 prompt = st.text_area("Message", placeholder="Ask about training, recovery, planning, or your data...", height=170, label_visibility="collapsed")
-                submitted = st.form_submit_button("Send", use_container_width=True)
+                submitted = st.form_submit_button("Send", width="stretch")
 
             if submitted:
-                send_agent_message(prompt, owner_mode, memory_action, structured_topic, data_context_settings)
+                send_agent_message(prompt, owner_mode, memory_action, structured_topic, data_context_settings, coach_settings)
 
     with answers_column:
         with st.container(border=True):
