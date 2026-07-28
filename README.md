@@ -1,5 +1,8 @@
 # Custom daily statistics and overall activity numbers
 
+Codex setup notes are in `docs/codex_setup.md`.
+Environment-file notes are in `docs/environment.md`.
+
 Run all daily jobs:
 
 ```powershell
