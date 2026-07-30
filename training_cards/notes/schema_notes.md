@@ -64,3 +64,12 @@ The schema also avoids separate goal/focus fields such as `primary_focus`, `phas
 ## Current Design Rule
 
 Add fields only when they support a real coaching decision, comparison, recommendation, or future Training Platform display.
+
+## App Display Assumption
+
+Cards are expected to support two app views later:
+
+- Preview: quick comparison using concise fields such as title, summary, purpose, suitable levels, duration, and key context.
+- Detail view: deeper coaching information such as detailed description, when to choose, when not to choose, adaptations, terrain demands, mistakes, warning signs, progression, regression, and sequencing.
+
+Card content should be written so the preview is useful without making the detail view repetitive.

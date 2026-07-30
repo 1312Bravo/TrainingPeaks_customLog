@@ -10,6 +10,7 @@ class BaseTrainingCard:
     suitable_levels: list[TrainingLevel]
     summary: str
     purpose: str
+    detailed_description: str = ""
     tags: list[str] = field(default_factory=list)
     goal_race_context: list[str] = field(default_factory=list)
     when_to_choose: list[str] = field(default_factory=list)
