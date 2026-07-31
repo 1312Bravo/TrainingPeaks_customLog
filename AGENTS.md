@@ -12,6 +12,12 @@ Use this file for project-specific guidance only. Reusable workflows should live
 - Avoid renames, moves, or deletes unless they are clearly needed.
 - Keep the repository organized around existing jobs and the `training_platform` app.
 
+## Code Style
+- Use common sense with whitespace: keep small helper functions compact, and add blank lines inside functions only when they separate meaningful steps.
+- Put a single-line helper comment directly above the function or class it explains.
+- Use a blank line after a multi-line comment block only when it improves readability.
+- Avoid adding empty lines inside a tiny one-return function just to make it look broader.
+
 ## Project Areas
 - `daily_jobs/` runs local job wrappers.
 - `daily_statistics_job/` contains daily/activity statistics logic.

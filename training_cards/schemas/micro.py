@@ -3,6 +3,11 @@ from dataclasses import dataclass, field
 from .base import BaseTrainingCard
 from .enums import CardType
 
+# ----------------------------------------------------------
+# Micro Week Card
+# ----------------------------------------------------------
+# Micro cards describe reusable week structures inside mezzo blocks.
+
 @dataclass(slots=True)
 class MicroCard(BaseTrainingCard):
     recommended_duration_days: str = ""

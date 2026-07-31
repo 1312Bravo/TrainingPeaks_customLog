@@ -3,6 +3,12 @@ from dataclasses import dataclass, field
 from .base import BaseTrainingCard
 from .enums import CardType
 
+# ----------------------------------------------------------
+# Session Workout Structure
+# ----------------------------------------------------------
+# Session parts make workouts exportable/readable as warm-up, main set,
+# recovery, cooldown, or execution blocks with duration and RPE guidance.
+
 @dataclass(slots=True)
 class SessionPart:
     name: str
@@ -18,6 +24,12 @@ class SessionPart:
             raise ValueError("Session part duration cannot be empty.")
         if not self.rpe.strip():
             raise ValueError("Session part rpe cannot be empty.")
+
+# ----------------------------------------------------------
+# Session Card
+# ----------------------------------------------------------
+# Session cards are individual workout patterns that can be reused across
+# many different micro weeks.
 
 @dataclass(slots=True)
 class SessionCard(BaseTrainingCard):

@@ -3,6 +3,12 @@ from dataclasses import dataclass, field
 from .enums import CardType, TrainingLevel
 from .references import CardReference
 
+# ----------------------------------------------------------
+# Shared Card Fields
+# ----------------------------------------------------------
+# BaseTrainingCard holds the coaching fields that every card type needs for
+# preview, detail view, filtering, and recommendation/navigation logic.
+
 @dataclass(slots=True)
 class BaseTrainingCard:
     id: str
@@ -25,6 +31,8 @@ class BaseTrainingCard:
     regression_rules: list[str] = field(default_factory=list)
     references: list[CardReference] = field(default_factory=list)
 
+    # Keep validation light: only reject cards that cannot be identified,
+    # displayed, or understood at a basic level.
     def __post_init__(self) -> None:
         if not self.id.strip():
             raise ValueError("Training card id cannot be empty.")

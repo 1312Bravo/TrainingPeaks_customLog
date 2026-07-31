@@ -3,6 +3,11 @@ from dataclasses import dataclass, field
 from .base import BaseTrainingCard
 from .enums import CardType
 
+# ----------------------------------------------------------
+# Mezzo Block Card
+# ----------------------------------------------------------
+# Mezzo cards describe focused blocks inside a macro phase.
+
 @dataclass(slots=True)
 class MezzoCard(BaseTrainingCard):
     recommended_duration_weeks: str = ""

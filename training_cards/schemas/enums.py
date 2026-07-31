@@ -1,5 +1,11 @@
 from enum import StrEnum
 
+# ----------------------------------------------------------
+# Controlled Vocabulary
+# ----------------------------------------------------------
+# These enums keep card data consistent when cards are filtered, exported,
+# loaded from JSON, or shown in the Training Platform app.
+
 class CardType(StrEnum):
     MACRO = "macro"
     MEZZO = "mezzo"

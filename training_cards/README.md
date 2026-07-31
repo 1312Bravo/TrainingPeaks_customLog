@@ -29,3 +29,9 @@ The current draft contains 38 cards:
 Use `training_cards/registry.py` as the central import point for the full library.
 
 Tags are currently free-text strings. Keep them short and consistent; do not convert them into enums until real app filtering shows that stricter control is needed.
+
+## Code And Content
+
+Schema, registry, serialization, and JSON storage files include comments because they explain how the library works.
+
+Individual card files are intentionally written like structured data. Keep comments in card files rare; the card fields themselves should carry the coaching content.
