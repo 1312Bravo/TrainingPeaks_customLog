@@ -1,0 +1,34 @@
+from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
+
+aerobic_maintenance_week = MicroCard(
+    id = "micro_aerobic_maintenance_week",
+    title = "Aerobic Maintenance Week",
+    card_type = CardType.MICRO,
+    suitable_levels = [TrainingLevel.ALL],
+    summary = "A steady week that maintains aerobic rhythm without pushing load upward.",
+    purpose = "Preserve consistency and aerobic fitness while leaving room for recovery or life stress.",
+    detailed_description = "This week is useful when the athlete should keep training but not chase progression. It protects routine while avoiding unnecessary overload. Trail runners can include familiar trails, but should keep vertical gain and downhill load predictable.",
+    tags = ["maintenance", "aerobic", "steady"],
+    goal_race_context = ["Useful between harder weeks or during busy life periods."],
+    when_to_choose = ["When current fitness should be maintained.", "When the athlete needs a stable week before building again."],
+    when_not_to_choose = ["Do not use repeatedly if the goal requires progressive overload.", "Do not use to hide moderate-intensity drift every day."],
+    expected_adaptations = ["Maintained aerobic rhythm.", "Stable freshness.", "Reduced risk of overreaching."],
+    training_characteristics = ["Mostly easy runs.", "One optional light quality touch.", "Stable weekly load."],
+    terrain_demands = ["Use normal familiar terrain.", "Avoid sudden new technical or downhill stress."],
+    common_mistakes = ["Letting easy runs become steady-hard.", "Adding extra distance because the week feels manageable."],
+    warning_signs = ["Maintenance still feels tiring.", "Easy effort keeps drifting upward."],
+    progression_rules = ["Move to volume progression or intensity support when freshness is stable."],
+    regression_rules = ["Move to recovery week if fatigue persists."],
+    references = [
+        CardReference(card_id = "mezzo_easy_volume_block", relationship = CardRelationship.PARENT, tags = ["support_week"]),
+        CardReference(card_id = "session_easy_run", relationship = CardRelationship.CHILD, tags = ["core_session"]),
+        CardReference(card_id = "session_strides", relationship = CardRelationship.CHILD, tags = ["optional"]),
+    ],
+    recommended_duration_days = "7",
+    week_structure = ["Several easy runs.", "Optional strides or short steady touch."],
+    key_sessions = ["Easy Run", "Strides"],
+    load_pattern = "Stable load.",
+    placement_guidance = ["Use between progression weeks or when external stress is high."],
+    recovery_requirements = ["Athlete should finish the week at least as fresh as they started."],
+)
+

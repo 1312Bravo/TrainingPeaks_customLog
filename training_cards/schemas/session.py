@@ -4,14 +4,31 @@ from .base import BaseTrainingCard
 from .enums import CardType
 
 @dataclass(slots=True)
+class SessionPart:
+    name: str
+    duration: str
+    rpe: str
+    instructions: str = ""
+    terrain_notes: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.name.strip():
+            raise ValueError("Session part name cannot be empty.")
+        if not self.duration.strip():
+            raise ValueError("Session part duration cannot be empty.")
+        if not self.rpe.strip():
+            raise ValueError("Session part rpe cannot be empty.")
+
+@dataclass(slots=True)
 class SessionCard(BaseTrainingCard):
     session_family: str = ""
     typical_duration: str = ""
+    workout_parts: list[SessionPart] = field(default_factory=list)
     intensity_guidance: list[str] = field(default_factory=list)
     execution_notes: list[str] = field(default_factory=list)
     recovery_requirements: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        super().__post_init__()
+        BaseTrainingCard.__post_init__(self)
         if self.card_type != CardType.SESSION:
             raise ValueError("SessionCard card_type must be CardType.SESSION.")

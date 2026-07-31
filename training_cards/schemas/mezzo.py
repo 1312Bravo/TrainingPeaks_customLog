@@ -9,6 +9,6 @@ class MezzoCard(BaseTrainingCard):
     placement_guidance: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
-        super().__post_init__()
+        BaseTrainingCard.__post_init__(self)
         if self.card_type != CardType.MEZZO:
             raise ValueError("MezzoCard card_type must be CardType.MEZZO.")

@@ -4,7 +4,7 @@ from .macro import MacroCard
 from .mezzo import MezzoCard
 from .micro import MicroCard
 from .references import CardReference
-from .session import SessionCard
+from .session import SessionCard, SessionPart
 
 __all__ = [
     "BaseTrainingCard",
@@ -15,5 +15,6 @@ __all__ = [
     "MezzoCard",
     "MicroCard",
     "SessionCard",
+    "SessionPart",
     "TrainingLevel",
 ]

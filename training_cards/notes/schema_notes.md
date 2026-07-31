@@ -99,3 +99,30 @@ CardReference(
 ```
 
 Use reference tags for structured context. Put longer explanations in the card content itself.
+
+## Registry
+
+Use `training_cards/registry.py` as the central access point for cards.
+
+It exposes:
+
+- `ALL_CARDS`
+- `CARD_BY_ID`
+- `get_card`
+- `get_cards_by_type`
+- `get_cards_by_tag`
+- `get_referenced_cards`
+
+## Session Workout Guides
+
+`SessionCard` includes `workout_parts` for TrainingPeaks-style workout guidance.
+
+Each `SessionPart` should describe:
+
+- `name`
+- `duration`
+- `rpe`
+- `instructions`
+- `terrain_notes`
+
+RPE uses a 1-10 scale. Durations should usually be adaptable ranges, not overly precise prescriptions.

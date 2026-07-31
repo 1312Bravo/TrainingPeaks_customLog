@@ -80,6 +80,8 @@ The schema and card content should support this preview/detail structure without
 
 The detail view may include a longer `detailed_description` field. This should be used for readable in-depth coaching context, not a longer version of the preview.
 
+Session cards should include a structured workout guide when enough information is available. Use practical parts such as warm-up, main set, recovery, cooldown, and optional notes. Give duration and RPE guidance on a 1-10 scale, but keep ranges adaptable rather than falsely precise.
+
 ## Card Relationships
 
 Cards should be connected with structured references rather than loose string lists or deep nested folders. Keep card files grouped by planning level, and use references to describe hierarchy, sequencing, alternatives, and support relationships.

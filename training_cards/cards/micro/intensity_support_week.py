@@ -1,0 +1,35 @@
+from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
+
+intensity_support_week = MicroCard(
+    id = "micro_intensity_support_week",
+    title = "Intensity Support Week",
+    card_type = CardType.MICRO,
+    suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
+    summary = "A week built around one controlled threshold or aerobic-power workout.",
+    purpose = "Develop intensity tolerance while preserving enough easy running for adaptation.",
+    detailed_description = "This week should feel focused, not frantic. One main workout usually drives the adaptation, with the rest of the week supporting recovery and aerobic volume. Trail runners can use effort-based intensity on climbs or smoother trails, but technical terrain should not disrupt the target stimulus.",
+    tags = ["intensity", "threshold", "aerobic_power"],
+    goal_race_context = ["Useful when controlled intensity is relevant to the goal."],
+    when_to_choose = ["When the athlete is fresh enough to complete a quality session.", "When base load is stable."],
+    when_not_to_choose = ["Do not use if easy running is already stale.", "Do not stack with a very demanding long run unless the athlete is advanced and recovered."],
+    expected_adaptations = ["Improved controlled hard effort.", "Better aerobic power or threshold support.", "Improved workout discipline."],
+    training_characteristics = ["One key intensity session.", "Mostly easy running outside the workout.", "Optional strides if recovery is good."],
+    terrain_demands = ["Use terrain that keeps the workout controlled.", "For trail runners, climbs may replace pace targets."],
+    common_mistakes = ["Running the workout too hard.", "Adding too much moderate intensity around it."],
+    warning_signs = ["Quality fades early.", "Easy days feel flat afterward."],
+    progression_rules = ["Increase total quality work gradually.", "Keep effort repeatable."],
+    regression_rules = ["Shorten intervals or switch to aerobic maintenance if recovery is poor."],
+    references = [
+        CardReference(card_id = "mezzo_threshold_development_block", relationship = CardRelationship.PARENT, tags = ["threshold"]),
+        CardReference(card_id = "mezzo_aerobic_power_block", relationship = CardRelationship.PARENT, tags = ["aerobic_power"]),
+        CardReference(card_id = "session_threshold_intervals", relationship = CardRelationship.CHILD, tags = ["option"]),
+        CardReference(card_id = "session_aerobic_power_intervals", relationship = CardRelationship.CHILD, tags = ["option"]),
+    ],
+    recommended_duration_days = "7",
+    week_structure = ["One key intensity workout.", "Easy support runs.", "Optional short strides."],
+    key_sessions = ["Threshold Intervals", "Aerobic Power Intervals"],
+    load_pattern = "Quality-focused load.",
+    placement_guidance = ["Use during threshold or aerobic-power blocks."],
+    recovery_requirements = ["Easy running before and after key intensity."],
+)
+
