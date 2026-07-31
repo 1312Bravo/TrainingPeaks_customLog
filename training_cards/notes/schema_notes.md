@@ -21,19 +21,21 @@ BaseTrainingCard
   MacroCard
   MezzoCard
   MicroCard
+  SessionCard
 ```
 
-`BaseTrainingCard` contains fields that every training card should have, such as identity, purpose, race context, terrain demands, progression rules, regression rules, warning signs, and sequencing options.
+`BaseTrainingCard` contains fields that every training card should have, such as identity, purpose, race context, terrain demands, progression rules, regression rules, warning signs, and structured card references.
 
-`MacroCard`, `MezzoCard`, and `MicroCard` inherit all base fields and then add fields that only make sense at their own planning level.
+`MacroCard`, `MezzoCard`, `MicroCard`, and `SessionCard` inherit all base fields and then add fields that only make sense at their own planning level.
 
 ## Card Levels
 
 The current planning levels are:
 
 - Macro card: a training phase, usually several weeks.
-- Mezzo card: a focused block inside a macro phase.
-- Micro card: a week or session-pattern card.
+- Mezzo card: a focused block inside a macro phase, usually several weeks.
+- Micro card: a week structure inside a mezzo block, usually one week.
+- Session card: a specific workout or session pattern inside a micro week.
 
 This structure may change later if real card creation shows that another layer is needed.
 
@@ -73,3 +75,27 @@ Cards are expected to support two app views later:
 - Detail view: deeper coaching information such as detailed description, when to choose, when not to choose, adaptations, terrain demands, mistakes, warning signs, progression, regression, and sequencing.
 
 Card content should be written so the preview is useful without making the detail view repetitive.
+
+## Card References
+
+Cards are stored flat by planning level, but connected through structured references.
+
+```text
+cards/
+  macro/
+  mezzo/
+  micro/
+  session/
+```
+
+Relationships should use `CardReference` instead of loose string lists. This keeps card navigation checkable and reusable when one card fits many places.
+
+```python
+CardReference(
+    card_id = "mezzo_easy_volume_block",
+    relationship = CardRelationship.CHILD,
+    tags = ["natural_fit", "low_intensity"],
+)
+```
+
+Use reference tags for structured context. Put longer explanations in the card content itself.

@@ -9,8 +9,6 @@ class MicroCard(BaseTrainingCard):
     week_structure: list[str] = field(default_factory=list)
     key_sessions: list[str] = field(default_factory=list)
     load_pattern: str = ""
-    parent_macro_options: list[str] = field(default_factory=list)
-    parent_mezzo_options: list[str] = field(default_factory=list)
     placement_guidance: list[str] = field(default_factory=list)
     recovery_requirements: list[str] = field(default_factory=list)
 

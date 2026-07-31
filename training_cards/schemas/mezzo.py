@@ -6,7 +6,6 @@ from .enums import CardType
 @dataclass(slots=True)
 class MezzoCard(BaseTrainingCard):
     recommended_duration_weeks: str = ""
-    parent_macro_options: list[str] = field(default_factory=list)
     placement_guidance: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:

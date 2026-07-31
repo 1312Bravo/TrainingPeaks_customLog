@@ -4,6 +4,15 @@ class CardType(StrEnum):
     MACRO = "macro"
     MEZZO = "mezzo"
     MICRO = "micro"
+    SESSION = "session"
+
+class CardRelationship(StrEnum):
+    PARENT = "parent"
+    CHILD = "child"
+    PREVIOUS = "previous"
+    NEXT = "next"
+    ALTERNATIVE = "alternative"
+    SUPPORT = "support"
 
 class TrainingLevel(StrEnum):
     ALL = "all"

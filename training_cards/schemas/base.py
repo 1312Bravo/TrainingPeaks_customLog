@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from .enums import CardType, TrainingLevel
+from .references import CardReference
 
 @dataclass(slots=True)
 class BaseTrainingCard:
@@ -22,8 +23,7 @@ class BaseTrainingCard:
     warning_signs: list[str] = field(default_factory=list)
     progression_rules: list[str] = field(default_factory=list)
     regression_rules: list[str] = field(default_factory=list)
-    previous_card_options: list[str] = field(default_factory=list)
-    next_card_options: list[str] = field(default_factory=list)
+    references: list[CardReference] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not self.id.strip():
