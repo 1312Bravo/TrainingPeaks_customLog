@@ -4,7 +4,7 @@ These notes describe the intended storage model for the training-card library.
 
 ## Direction
 
-The long-term source of truth should be a cloud JSON card library.
+The source of truth is the cloud JSON card library.
 
 Python should be the tooling layer around that library:
 
@@ -213,7 +213,7 @@ Example:
 
 ## Local Cache
 
-The local cache is a temporary working copy of the cloud library.
+The local cache is a temporary working copy of the cloud library. It is also what `training_cards/registry.py` loads.
 
 Current local cache path:
 
@@ -222,6 +222,8 @@ training_cards/local_cache/cloud_library/
 ```
 
 The local cache is ignored by git. It should be safe to delete and recreate from cloud.
+
+When `download_cloud_library` runs, old cached JSON files are removed before the fresh cloud copy is downloaded. This keeps deleted cloud cards from lingering locally.
 
 The local cache should not silently sync both ways. Use explicit steps:
 
@@ -232,6 +234,8 @@ The local cache should not silently sync both ways. Use explicit steps:
 5. Upload local cache to cloud.
 
 This avoids accidental overwrites when both cloud and local files changed.
+
+Run download, validation, and upload sequentially. Do not run download and upload at the same time, because upload validates the local cache while download writes files.
 
 ## App Loading
 
@@ -246,7 +250,7 @@ Recommended app behavior:
 - Check `card_count`, duplicate IDs, duplicate slugs, missing files, and broken references.
 - Use validated cards inside the app.
 
-The app should not depend on Python seed card files once the cloud library is trusted.
+The active `training_cards/registry.py` no longer depends on Python seed card files. It loads the local JSON cache, which should be refreshed from Google Drive.
 
 ## Manifest Strictness
 
@@ -296,13 +300,12 @@ Current expectation:
 
 ## Current Transition
 
-Right now, Python seed cards still exist and can export the JSON library.
+Python seed cards still exist and can export the JSON library, but they are now backup/export material rather than the active registry source.
 
-The transition can happen step by step:
+Current state:
 
-1. Keep Python seed cards while we finish cleaning content.
-2. Export a complete cloud-style JSON library.
-3. Upload that JSON library to Google Drive.
-4. Add download/load helpers for Google Drive.
-5. Switch the app/library registry to load JSON instead of Python seed cards.
-6. Keep Python seed cards only as backup or remove them after the cloud flow is trusted.
+1. Google Drive JSON is the source of truth.
+2. Local cache is downloaded from Google Drive.
+3. `training_cards/registry.py` loads the local JSON cache.
+4. Python seed cards remain available through `training_cards/seed_registry.py`.
+5. Later, the Training Platform app can import from `training_cards/registry.py` without caring whether cards started as JSON or Python.

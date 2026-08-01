@@ -15,7 +15,7 @@ This folder is the isolated workspace for designing reusable training cards befo
 
 - Keep this folder independent from the Streamlit app until the training logic is ready.
 - Store card schemas separately from card content.
-- Use cloud JSON as the intended long-term source of truth.
+- Use cloud JSON as the source of truth.
 - Use Python schemas and helpers to validate, create, edit, export, and later upload cards.
 
 ## Current Library Draft
@@ -27,7 +27,7 @@ The current draft contains 38 cards:
 - 9 micro cards
 - 14 session cards
 
-Use `training_cards/registry.py` as the central import point for the full library.
+Use `training_cards/registry.py` as the central import point for the active library. It loads the downloaded JSON cache from Google Drive.
 
 Tags are currently free-text strings. Keep them short and consistent; do not convert them into enums until real app filtering shows that stricter control is needed.
 
@@ -51,11 +51,13 @@ Cards now have both an `id` and a `slug`.
 
 Card IDs now use stable numbered identifiers such as `macro_001`, while slugs keep the readable names such as `base-development`.
 
-The current transition is:
+The active loading flow is:
 
-1. Python seed cards can still generate the JSON library.
-2. The cloud JSON library should become the source of truth.
-3. The local cache should be treated as a temporary downloaded working copy.
+1. Google Drive JSON is the source of truth.
+2. `training_cards/local_cache/cloud_library/` is the downloaded working copy.
+3. `training_cards/registry.py` loads and validates that local JSON cache.
+
+Python seed cards still exist as backup/export material, but they are not the active registry source.
 
 See `training_cards/notes/cloud_storage_notes.md` for the full storage workflow.
 
@@ -64,6 +66,7 @@ Cloud configuration and workflow helpers:
 - `training_cards/cloud_config.py`: Google Drive folder IDs, root URL, and local cache path.
 - `training_cards/cloud_store.py`: cache export/load helpers and Drive sync workflow functions.
 - `training_cards/google_drive_client.py`: service-account Google Drive API client.
+- `training_cards/seed_registry.py`: backup Python seed card list used only for seed export.
 
 Useful local commands:
 

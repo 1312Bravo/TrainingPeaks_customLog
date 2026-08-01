@@ -9,8 +9,8 @@ from training_cards.json_store import (
     export_card_library_to_json,
     load_card_library_from_json,
 )
-from training_cards.registry import ALL_CARDS
 from training_cards.schemas import BaseTrainingCard
+from training_cards.seed_registry import ALL_SEED_CARDS
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +27,7 @@ def get_cloud_library_url(config: GoogleDriveLibraryConfig = GOOGLE_DRIVE_LIBRAR
 
 # Export the current Python seed cards into the ignored local cloud cache.
 def export_seed_library_to_cache(config: GoogleDriveLibraryConfig = GOOGLE_DRIVE_LIBRARY) -> Path:
-    export_card_library_to_json(ALL_CARDS, config.local_cache_dir)
+    export_card_library_to_json(ALL_SEED_CARDS, config.local_cache_dir)
     return config.local_cache_dir
 
 
@@ -39,6 +39,8 @@ def load_cached_cloud_library(config: GoogleDriveLibraryConfig = GOOGLE_DRIVE_LI
 # Download the Drive library into local cache through a concrete Drive client.
 def download_cloud_library(client, config: GoogleDriveLibraryConfig = GOOGLE_DRIVE_LIBRARY) -> Path:
     config.local_cache_dir.mkdir(parents = True, exist_ok = True)
+    _clear_cached_json_files(config.local_cache_dir)
+
     cards_dir = config.local_cache_dir / CARDS_ROOT
     cards_dir.mkdir(parents = True, exist_ok = True)
 
@@ -86,6 +88,17 @@ def _find_drive_item(items: list[DriveItem], title: str) -> DriveItem:
             return item
 
     raise FileNotFoundError(f"Google Drive item not found: {title}")
+
+
+# Remove old local JSON before downloading a fresh cloud copy.
+def _clear_cached_json_files(cache_dir: Path) -> None:
+    manifest_path = cache_dir / MANIFEST_FILE_NAME
+
+    if manifest_path.exists():
+        manifest_path.unlink()
+
+    for path in (cache_dir / CARDS_ROOT).glob("*/*.json"):
+        path.unlink()
 
 
 def _upsert_file(client, local_path: Path, folder_id: str, file_name: str, existing_items: list[DriveItem]) -> None:
