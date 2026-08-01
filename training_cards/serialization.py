@@ -22,10 +22,7 @@ CARD_CLASS_BY_TYPE = {
     CardType.SESSION: SessionCard,
 }
 
-# Convert a validated Python card object into plain JSON-safe data.
-# Enums, references, and session parts are made explicit so exported JSON
-# stays simple and portable.
-
+# Convert a validated card object into plain JSON-safe data.
 def card_to_dict(card: BaseTrainingCard) -> dict[str, Any]:
     data = asdict(card)
 
@@ -54,9 +51,6 @@ def card_to_dict(card: BaseTrainingCard) -> dict[str, Any]:
     return data
 
 # Convert JSON data back into the correct card dataclass.
-# This is the path the app can use later when cloud JSON becomes the source
-# of truth.
-
 def card_from_dict(data: dict[str, Any]) -> BaseTrainingCard:
     card_data = dict(data)
     card_type = CardType(card_data["card_type"])

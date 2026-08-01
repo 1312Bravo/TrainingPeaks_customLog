@@ -15,7 +15,8 @@ This folder is the isolated workspace for designing reusable training cards befo
 
 - Keep this folder independent from the Streamlit app until the training logic is ready.
 - Store card schemas separately from card content.
-- Start simple and add structure only when the cards need it.
+- Use cloud JSON as the intended long-term source of truth.
+- Use Python schemas and helpers to validate, create, edit, export, and later upload cards.
 
 ## Current Library Draft
 
@@ -48,7 +49,32 @@ Cards now have both an `id` and a `slug`.
 - `id` is the stable technical reference used by card relationships and app logic.
 - `slug` is the readable file/url name used for JSON filenames and cloud paths.
 
-For now, Python seed cards remain the source used to generate the local JSON library copy. Card IDs now use stable numbered identifiers such as `macro_001`, while slugs keep the readable names such as `base-development`.
+Card IDs now use stable numbered identifiers such as `macro_001`, while slugs keep the readable names such as `base-development`.
+
+The current transition is:
+
+1. Python seed cards can still generate the JSON library.
+2. The cloud JSON library should become the source of truth.
+3. The local cache should be treated as a temporary downloaded working copy.
+
+See `training_cards/notes/cloud_storage_notes.md` for the full storage workflow.
+
+Cloud configuration and workflow helpers:
+
+- `training_cards/cloud_config.py`: Google Drive folder IDs, root URL, and local cache path.
+- `training_cards/cloud_store.py`: cache export/load helpers and Drive sync workflow functions.
+- `training_cards/google_drive_client.py`: service-account Google Drive API client.
+
+Useful local commands:
+
+```powershell
+py -m training_cards.scripts.print_cloud_config
+py -m training_cards.scripts.export_cache
+py -m training_cards.scripts.validate_cache
+py -m training_cards.scripts.download_cloud_library
+py -m training_cards.scripts.upload_cache
+py -m training_cards.scripts.export_seed_to_cloud
+```
 
 ## Code And Content
 
