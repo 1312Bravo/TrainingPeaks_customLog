@@ -4,3 +4,4 @@ googleDrive_secrets.json
 garmin_tokens.json
 __pycache__/
 *.pyc
+training_cards/local_cache/
