@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 easy_run = SessionCard(
-    id = "session_easy_run",
+    id = "session_001",
+    slug = "easy-run",
     title = "Easy Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,8 +21,8 @@ easy_run = SessionCard(
     progression_rules = ["Add duration gradually.", "Keep effort easy before increasing terrain stress."],
     regression_rules = ["Shorten or flatten the run if fatigue is high."],
     references = [
-        CardReference(card_id = "micro_aerobic_maintenance_week", relationship = CardRelationship.PARENT, tags = ["core_session"]),
-        CardReference(card_id = "micro_volume_progression_week", relationship = CardRelationship.PARENT, tags = ["core_session"]),
+        CardReference(card_id = "micro_002", relationship = CardRelationship.PARENT, tags = ["core_session"]),
+        CardReference(card_id = "micro_003", relationship = CardRelationship.PARENT, tags = ["core_session"]),
     ],
     session_family = "easy",
     typical_duration = "20-90 minutes",
@@ -34,3 +35,4 @@ easy_run = SessionCard(
     execution_notes = ["Finish feeling able to repeat the session tomorrow."],
     recovery_requirements = ["Low recovery cost when properly easy."],
 )
+

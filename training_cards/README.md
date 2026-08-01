@@ -30,8 +30,29 @@ Use `training_cards/registry.py` as the central import point for the full librar
 
 Tags are currently free-text strings. Keep them short and consistent; do not convert them into enums until real app filtering shows that stricter control is needed.
 
+## JSON Library Shape
+
+The planned cloud format is a JSON library with a `manifest.json` at the root and one JSON file per card under `cards/`.
+
+The manifest answers the basic library questions:
+
+- What library is this?
+- Which schema version does it use?
+- How many cards should exist?
+- When was it last updated?
+- Where are cards stored?
+- Which card IDs and slugs exist?
+
+Cards now have both an `id` and a `slug`.
+
+- `id` is the stable technical reference used by card relationships and app logic.
+- `slug` is the readable file/url name used for JSON filenames and cloud paths.
+
+For now, Python seed cards remain the source used to generate the local JSON library copy. Card IDs now use stable numbered identifiers such as `macro_001`, while slugs keep the readable names such as `base-development`.
+
 ## Code And Content
 
 Schema, registry, serialization, and JSON storage files include comments because they explain how the library works.
 
 Individual card files are intentionally written like structured data. Keep comments in card files rare; the card fields themselves should carry the coaching content.
+

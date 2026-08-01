@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MacroCard, TrainingLevel
 
 build_phase = MacroCard(
-    id = "macro_build_phase",
+    id = "macro_003",
+    slug = "build-phase",
     title = "Build Phase",
     card_type = CardType.MACRO,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -63,11 +64,11 @@ build_phase = MacroCard(
         "Replace terrain-specific stress with controlled flat running when mechanical load is excessive.",
     ],
     references = [
-        CardReference(card_id = "macro_base_development", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
-        CardReference(card_id = "macro_race_specific_preparation", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
-        CardReference(card_id = "mezzo_threshold_development_block", relationship = CardRelationship.CHILD, tags = ["intensity"]),
-        CardReference(card_id = "mezzo_aerobic_power_block", relationship = CardRelationship.CHILD, tags = ["intensity"]),
-        CardReference(card_id = "mezzo_strength_endurance_block", relationship = CardRelationship.CHILD, tags = ["strength"]),
+        CardReference(card_id = "macro_002", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
+        CardReference(card_id = "macro_004", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
+        CardReference(card_id = "mezzo_004", relationship = CardRelationship.CHILD, tags = ["intensity"]),
+        CardReference(card_id = "mezzo_005", relationship = CardRelationship.CHILD, tags = ["intensity"]),
+        CardReference(card_id = "mezzo_003", relationship = CardRelationship.CHILD, tags = ["strength"]),
     ],
     recommended_duration_weeks = "6-12",
     timing_guidance = [

@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MacroCard, TrainingLevel
 
 recovery_and_reset = MacroCard(
-    id = "macro_recovery_and_reset",
+    id = "macro_006",
+    slug = "recovery-and-reset",
     title = "Recovery And Reset",
     card_type = CardType.MACRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -61,10 +62,10 @@ recovery_and_reset = MacroCard(
         "Seek appropriate professional support for persistent pain, illness, or concerning fatigue.",
     ],
     references = [
-        CardReference(card_id = "macro_peak_and_taper", relationship = CardRelationship.PREVIOUS, tags = ["post_race"]),
-        CardReference(card_id = "macro_return_to_consistency", relationship = CardRelationship.NEXT, tags = ["restart"]),
-        CardReference(card_id = "macro_base_development", relationship = CardRelationship.NEXT, tags = ["if_ready"]),
-        CardReference(card_id = "mezzo_recovery_block", relationship = CardRelationship.CHILD, tags = ["core_block"]),
+        CardReference(card_id = "macro_005", relationship = CardRelationship.PREVIOUS, tags = ["post_race"]),
+        CardReference(card_id = "macro_001", relationship = CardRelationship.NEXT, tags = ["restart"]),
+        CardReference(card_id = "macro_002", relationship = CardRelationship.NEXT, tags = ["if_ready"]),
+        CardReference(card_id = "mezzo_009", relationship = CardRelationship.CHILD, tags = ["core_block"]),
     ],
     recommended_duration_weeks = "1-6",
     timing_guidance = [

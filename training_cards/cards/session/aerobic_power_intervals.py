@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 aerobic_power_intervals = SessionCard(
-    id = "session_aerobic_power_intervals",
+    id = "session_008",
+    slug = "aerobic-power-intervals",
     title = "Aerobic Power Intervals",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,8 +21,8 @@ aerobic_power_intervals = SessionCard(
     progression_rules = ["Improve consistency before increasing reps."],
     regression_rules = ["Reduce reps or switch to threshold work if fatigue is high."],
     references = [
-        CardReference(card_id = "micro_intensity_support_week", relationship = CardRelationship.PARENT, tags = ["key_session"]),
-        CardReference(card_id = "mezzo_aerobic_power_block", relationship = CardRelationship.PARENT, tags = ["core_session"]),
+        CardReference(card_id = "micro_005", relationship = CardRelationship.PARENT, tags = ["key_session"]),
+        CardReference(card_id = "mezzo_005", relationship = CardRelationship.PARENT, tags = ["core_session"]),
     ],
     session_family = "aerobic_power",
     typical_duration = "10-30 minutes total quality work",
@@ -35,3 +36,4 @@ aerobic_power_intervals = SessionCard(
     execution_notes = ["Avoid turning every rep into a maximal effort."],
     recovery_requirements = ["Usually requires easy running afterward."],
 )
+

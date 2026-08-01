@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MacroCard, TrainingLevel
 
 race_specific_preparation = MacroCard(
-    id = "macro_race_specific_preparation",
+    id = "macro_004",
+    slug = "race-specific-preparation",
     title = "Race-Specific Preparation",
     card_type = CardType.MACRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -62,11 +63,11 @@ race_specific_preparation = MacroCard(
         "Reduce downhill, heat, or technical exposure if mechanical stress is too high.",
     ],
     references = [
-        CardReference(card_id = "macro_build_phase", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
-        CardReference(card_id = "macro_peak_and_taper", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
-        CardReference(card_id = "mezzo_race_practice_block", relationship = CardRelationship.CHILD, tags = ["specificity"]),
-        CardReference(card_id = "mezzo_long_endurance_block", relationship = CardRelationship.CHILD, tags = ["endurance"]),
-        CardReference(card_id = "mezzo_fueling_practice_block", relationship = CardRelationship.CHILD, tags = ["execution"]),
+        CardReference(card_id = "macro_003", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
+        CardReference(card_id = "macro_005", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
+        CardReference(card_id = "mezzo_007", relationship = CardRelationship.CHILD, tags = ["specificity"]),
+        CardReference(card_id = "mezzo_006", relationship = CardRelationship.CHILD, tags = ["endurance"]),
+        CardReference(card_id = "mezzo_008", relationship = CardRelationship.CHILD, tags = ["execution"]),
     ],
     recommended_duration_weeks = "4-10",
     timing_guidance = [

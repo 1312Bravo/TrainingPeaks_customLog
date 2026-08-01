@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 strength_endurance_hills = SessionCard(
-    id = "session_strength_endurance_hills",
+    id = "session_010",
+    slug = "strength-endurance-hills",
     title = "Strength Endurance Hills",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,8 +21,8 @@ strength_endurance_hills = SessionCard(
     progression_rules = ["Increase total uphill time gradually."],
     regression_rules = ["Reduce grade, reps, or duration."],
     references = [
-        CardReference(card_id = "micro_strength_support_week", relationship = CardRelationship.PARENT, tags = ["key_session"]),
-        CardReference(card_id = "mezzo_strength_endurance_block", relationship = CardRelationship.PARENT, tags = ["core_session"]),
+        CardReference(card_id = "micro_004", relationship = CardRelationship.PARENT, tags = ["key_session"]),
+        CardReference(card_id = "mezzo_003", relationship = CardRelationship.PARENT, tags = ["core_session"]),
     ],
     session_family = "strength_endurance",
     typical_duration = "10-40 minutes total uphill work",
@@ -35,3 +36,4 @@ strength_endurance_hills = SessionCard(
     execution_notes = ["Keep posture and rhythm stable."],
     recovery_requirements = ["Easy running afterward; watch calf and quad soreness."],
 )
+

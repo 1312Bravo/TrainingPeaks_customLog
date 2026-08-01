@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 volume_progression_week = MicroCard(
-    id = "micro_volume_progression_week",
+    id = "micro_003",
+    slug = "volume-progression-week",
     title = "Volume Progression Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,10 +21,10 @@ volume_progression_week = MicroCard(
     progression_rules = ["Progress one load variable at a time.", "Use recovery week after repeated building weeks."],
     regression_rules = ["Hold volume steady or reduce terrain stress first."],
     references = [
-        CardReference(card_id = "mezzo_easy_volume_block", relationship = CardRelationship.PARENT, tags = ["core_week"]),
-        CardReference(card_id = "mezzo_endurance_development_block", relationship = CardRelationship.PARENT, tags = ["core_week"]),
-        CardReference(card_id = "session_easy_run", relationship = CardRelationship.CHILD, tags = ["core_session"]),
-        CardReference(card_id = "session_long_run", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "mezzo_001", relationship = CardRelationship.PARENT, tags = ["core_week"]),
+        CardReference(card_id = "mezzo_002", relationship = CardRelationship.PARENT, tags = ["core_week"]),
+        CardReference(card_id = "session_001", relationship = CardRelationship.CHILD, tags = ["core_session"]),
+        CardReference(card_id = "session_003", relationship = CardRelationship.CHILD, tags = ["key_session"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["Easy runs across the week.", "One longer endurance session.", "No more than one light quality touch."],

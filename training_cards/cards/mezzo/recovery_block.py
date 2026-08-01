@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 recovery_block = MezzoCard(
-    id = "mezzo_recovery_block",
+    id = "mezzo_009",
+    slug = "recovery-block",
     title = "Recovery Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.ALL],
@@ -59,11 +60,11 @@ recovery_block = MezzoCard(
         "Seek professional help for persistent pain, illness, or concerning fatigue.",
     ],
     references = [
-        CardReference(card_id = "macro_recovery_and_reset", relationship = CardRelationship.PARENT, tags = ["core_block"]),
-        CardReference(card_id = "macro_return_to_consistency", relationship = CardRelationship.PARENT, tags = ["restart"]),
-        CardReference(card_id = "macro_peak_and_taper", relationship = CardRelationship.PARENT, tags = ["fatigue_management"]),
-        CardReference(card_id = "micro_recovery_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
-        CardReference(card_id = "mezzo_easy_volume_block", relationship = CardRelationship.NEXT, tags = ["if_ready"]),
+        CardReference(card_id = "macro_006", relationship = CardRelationship.PARENT, tags = ["core_block"]),
+        CardReference(card_id = "macro_001", relationship = CardRelationship.PARENT, tags = ["restart"]),
+        CardReference(card_id = "macro_005", relationship = CardRelationship.PARENT, tags = ["fatigue_management"]),
+        CardReference(card_id = "micro_001", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "mezzo_001", relationship = CardRelationship.NEXT, tags = ["if_ready"]),
     ],
     recommended_duration_weeks = "1-4",
     placement_guidance = [

@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 race_practice_block = MezzoCard(
-    id = "mezzo_race_practice_block",
+    id = "mezzo_007",
+    slug = "race-practice-block",
     title = "Race Practice Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.ALL],
@@ -57,10 +58,10 @@ race_practice_block = MezzoCard(
         "Simplify terrain or shorten sessions when execution quality drops.",
     ],
     references = [
-        CardReference(card_id = "macro_race_specific_preparation", relationship = CardRelationship.PARENT, tags = ["core_block"]),
-        CardReference(card_id = "macro_peak_and_taper", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
-        CardReference(card_id = "mezzo_fueling_practice_block", relationship = CardRelationship.SUPPORT, tags = ["execution"]),
-        CardReference(card_id = "micro_race_practice_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "macro_004", relationship = CardRelationship.PARENT, tags = ["core_block"]),
+        CardReference(card_id = "macro_005", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
+        CardReference(card_id = "mezzo_008", relationship = CardRelationship.SUPPORT, tags = ["execution"]),
+        CardReference(card_id = "micro_008", relationship = CardRelationship.CHILD, tags = ["core_week"]),
     ],
     recommended_duration_weeks = "2-6",
     placement_guidance = [

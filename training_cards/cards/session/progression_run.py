@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 progression_run = SessionCard(
-    id = "session_progression_run",
+    id = "session_004",
+    slug = "progression-run",
     title = "Progression Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -19,7 +20,7 @@ progression_run = SessionCard(
     warning_signs = ["Effort jumps abruptly.", "Recovery cost feels like a hard workout."],
     progression_rules = ["Extend the steady finish gradually."],
     regression_rules = ["Keep the whole run easy if control is poor."],
-    references = [CardReference(card_id = "micro_intensity_support_week", relationship = CardRelationship.PARENT, tags = ["light_quality"])],
+    references = [CardReference(card_id = "micro_005", relationship = CardRelationship.PARENT, tags = ["light_quality"])],
     session_family = "controlled_quality",
     typical_duration = "30-90 minutes",
     workout_parts = [
@@ -32,3 +33,4 @@ progression_run = SessionCard(
     execution_notes = ["The last part should feel focused, not desperate."],
     recovery_requirements = ["Usually moderate-low if controlled."],
 )
+

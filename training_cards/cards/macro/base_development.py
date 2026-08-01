@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MacroCard, TrainingLevel
 
 base_development = MacroCard(
-    id = "macro_base_development",
+    id = "macro_002",
+    slug = "base-development",
     title = "Base Development",
     card_type = CardType.MACRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -63,10 +64,10 @@ base_development = MacroCard(
         "Reduce terrain difficulty before reducing all running if trail stress is the problem.",
     ],
     references = [
-        CardReference(card_id = "macro_return_to_consistency", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
-        CardReference(card_id = "macro_build_phase", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
-        CardReference(card_id = "mezzo_easy_volume_block", relationship = CardRelationship.CHILD, tags = ["core_block"]),
-        CardReference(card_id = "mezzo_endurance_development_block", relationship = CardRelationship.CHILD, tags = ["core_block"]),
+        CardReference(card_id = "macro_001", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
+        CardReference(card_id = "macro_003", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
+        CardReference(card_id = "mezzo_001", relationship = CardRelationship.CHILD, tags = ["core_block"]),
+        CardReference(card_id = "mezzo_002", relationship = CardRelationship.CHILD, tags = ["core_block"]),
     ],
     recommended_duration_weeks = "8-16",
     timing_guidance = [

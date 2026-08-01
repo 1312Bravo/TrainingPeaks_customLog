@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 hiking_or_power_hiking_practice = SessionCard(
-    id = "session_hiking_or_power_hiking_practice",
+    id = "session_013",
+    slug = "hiking-or-power-hiking-practice",
     title = "Hiking Or Power-Hiking Practice",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,8 +21,8 @@ hiking_or_power_hiking_practice = SessionCard(
     progression_rules = ["Progress duration or climbing load gradually."],
     regression_rules = ["Reduce grade, duration, or pack load."],
     references = [
-        CardReference(card_id = "micro_long_run_focus_week", relationship = CardRelationship.PARENT, tags = ["trail_option"]),
-        CardReference(card_id = "micro_race_practice_week", relationship = CardRelationship.PARENT, tags = ["trail_option"]),
+        CardReference(card_id = "micro_006", relationship = CardRelationship.PARENT, tags = ["trail_option"]),
+        CardReference(card_id = "micro_008", relationship = CardRelationship.PARENT, tags = ["trail_option"]),
     ],
     session_family = "trail_specific",
     typical_duration = "20-90 minutes within a run or hike-run session",
@@ -35,3 +36,4 @@ hiking_or_power_hiking_practice = SessionCard(
     execution_notes = ["Practice smooth transitions and posture."],
     recovery_requirements = ["Watch calf, hip, and foot response."],
 )
+

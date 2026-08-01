@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 intensity_support_week = MicroCard(
-    id = "micro_intensity_support_week",
+    id = "micro_005",
+    slug = "intensity-support-week",
     title = "Intensity Support Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,10 +21,10 @@ intensity_support_week = MicroCard(
     progression_rules = ["Increase total quality work gradually.", "Keep effort repeatable."],
     regression_rules = ["Shorten intervals or switch to aerobic maintenance if recovery is poor."],
     references = [
-        CardReference(card_id = "mezzo_threshold_development_block", relationship = CardRelationship.PARENT, tags = ["threshold"]),
-        CardReference(card_id = "mezzo_aerobic_power_block", relationship = CardRelationship.PARENT, tags = ["aerobic_power"]),
-        CardReference(card_id = "session_threshold_intervals", relationship = CardRelationship.CHILD, tags = ["option"]),
-        CardReference(card_id = "session_aerobic_power_intervals", relationship = CardRelationship.CHILD, tags = ["option"]),
+        CardReference(card_id = "mezzo_004", relationship = CardRelationship.PARENT, tags = ["threshold"]),
+        CardReference(card_id = "mezzo_005", relationship = CardRelationship.PARENT, tags = ["aerobic_power"]),
+        CardReference(card_id = "session_007", relationship = CardRelationship.CHILD, tags = ["option"]),
+        CardReference(card_id = "session_008", relationship = CardRelationship.CHILD, tags = ["option"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["One key intensity workout.", "Easy support runs.", "Optional short strides."],

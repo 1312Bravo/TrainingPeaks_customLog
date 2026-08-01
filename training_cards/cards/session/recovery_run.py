@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 recovery_run = SessionCard(
-    id = "session_recovery_run",
+    id = "session_002",
+    slug = "recovery-run",
     title = "Recovery Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.ALL],
@@ -19,7 +20,7 @@ recovery_run = SessionCard(
     warning_signs = ["Feeling worse after the run.", "Pain increases."],
     progression_rules = ["Progress only when recovery runs consistently feel restorative."],
     regression_rules = ["Use walking or rest instead."],
-    references = [CardReference(card_id = "micro_recovery_week", relationship = CardRelationship.PARENT, tags = ["core_session"])],
+    references = [CardReference(card_id = "micro_001", relationship = CardRelationship.PARENT, tags = ["core_session"])],
     session_family = "recovery",
     typical_duration = "10-45 minutes",
     workout_parts = [
@@ -30,3 +31,4 @@ recovery_run = SessionCard(
     execution_notes = ["Stop before the session becomes training stress."],
     recovery_requirements = ["Should require little to no recovery."],
 )
+

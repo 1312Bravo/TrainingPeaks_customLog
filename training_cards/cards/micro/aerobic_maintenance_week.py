@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 aerobic_maintenance_week = MicroCard(
-    id = "micro_aerobic_maintenance_week",
+    id = "micro_002",
+    slug = "aerobic-maintenance-week",
     title = "Aerobic Maintenance Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,9 +21,9 @@ aerobic_maintenance_week = MicroCard(
     progression_rules = ["Move to volume progression or intensity support when freshness is stable."],
     regression_rules = ["Move to recovery week if fatigue persists."],
     references = [
-        CardReference(card_id = "mezzo_easy_volume_block", relationship = CardRelationship.PARENT, tags = ["support_week"]),
-        CardReference(card_id = "session_easy_run", relationship = CardRelationship.CHILD, tags = ["core_session"]),
-        CardReference(card_id = "session_strides", relationship = CardRelationship.CHILD, tags = ["optional"]),
+        CardReference(card_id = "mezzo_001", relationship = CardRelationship.PARENT, tags = ["support_week"]),
+        CardReference(card_id = "session_001", relationship = CardRelationship.CHILD, tags = ["core_session"]),
+        CardReference(card_id = "session_011", relationship = CardRelationship.CHILD, tags = ["optional"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["Several easy runs.", "Optional strides or short steady touch."],

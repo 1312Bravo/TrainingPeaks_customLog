@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 threshold_intervals = SessionCard(
-    id = "session_threshold_intervals",
+    id = "session_007",
+    slug = "threshold-intervals",
     title = "Threshold Intervals",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,8 +21,8 @@ threshold_intervals = SessionCard(
     progression_rules = ["Add total controlled time gradually."],
     regression_rules = ["Reduce reps, shorten intervals, or extend recovery."],
     references = [
-        CardReference(card_id = "micro_intensity_support_week", relationship = CardRelationship.PARENT, tags = ["key_session"]),
-        CardReference(card_id = "mezzo_threshold_development_block", relationship = CardRelationship.PARENT, tags = ["core_session"]),
+        CardReference(card_id = "micro_005", relationship = CardRelationship.PARENT, tags = ["key_session"]),
+        CardReference(card_id = "mezzo_004", relationship = CardRelationship.PARENT, tags = ["core_session"]),
     ],
     session_family = "threshold",
     typical_duration = "15-50 minutes total quality work",
@@ -35,3 +36,4 @@ threshold_intervals = SessionCard(
     execution_notes = ["Stop before form and effort control collapse."],
     recovery_requirements = ["Easy day before or after for most athletes."],
 )
+

@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 long_run = SessionCard(
-    id = "session_long_run",
+    id = "session_003",
+    slug = "long-run",
     title = "Long Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,8 +21,8 @@ long_run = SessionCard(
     progression_rules = ["Increase duration, specificity, or terrain stress gradually."],
     regression_rules = ["Shorten or simplify terrain if recovery suffers."],
     references = [
-        CardReference(card_id = "micro_long_run_focus_week", relationship = CardRelationship.PARENT, tags = ["core_session"]),
-        CardReference(card_id = "micro_volume_progression_week", relationship = CardRelationship.PARENT, tags = ["option"]),
+        CardReference(card_id = "micro_006", relationship = CardRelationship.PARENT, tags = ["core_session"]),
+        CardReference(card_id = "micro_003", relationship = CardRelationship.PARENT, tags = ["option"]),
     ],
     session_family = "endurance",
     typical_duration = "60 minutes to several hours, depending on athlete and goal",
@@ -34,3 +35,4 @@ long_run = SessionCard(
     execution_notes = ["Practice fueling when duration makes it relevant.", "Use effort rather than pace on variable terrain."],
     recovery_requirements = ["Plan easier running afterward."],
 )
+

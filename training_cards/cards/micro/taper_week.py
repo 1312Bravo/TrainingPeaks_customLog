@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 taper_week = MicroCard(
-    id = "micro_taper_week",
+    id = "micro_009",
+    slug = "taper-week",
     title = "Taper Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,9 +21,9 @@ taper_week = MicroCard(
     progression_rules = ["Keep sessions short and confidence-building."],
     regression_rules = ["Reduce further if fatigue, soreness, or illness appears."],
     references = [
-        CardReference(card_id = "macro_peak_and_taper", relationship = CardRelationship.PARENT, tags = ["race_week"]),
-        CardReference(card_id = "session_easy_run", relationship = CardRelationship.CHILD, tags = ["core_session"]),
-        CardReference(card_id = "session_strides", relationship = CardRelationship.CHILD, tags = ["rhythm"]),
+        CardReference(card_id = "macro_005", relationship = CardRelationship.PARENT, tags = ["race_week"]),
+        CardReference(card_id = "session_001", relationship = CardRelationship.CHILD, tags = ["core_session"]),
+        CardReference(card_id = "session_011", relationship = CardRelationship.CHILD, tags = ["rhythm"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["Short easy runs.", "Optional brief rhythm work.", "Rest or shakeout before race as appropriate."],

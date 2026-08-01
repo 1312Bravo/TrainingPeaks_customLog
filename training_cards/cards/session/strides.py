@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 strides = SessionCard(
-    id = "session_strides",
+    id = "session_011",
+    slug = "strides",
     title = "Strides",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,8 +21,8 @@ strides = SessionCard(
     progression_rules = ["Add repetitions gradually if tolerated."],
     regression_rules = ["Skip strides when sore or fatigued."],
     references = [
-        CardReference(card_id = "micro_aerobic_maintenance_week", relationship = CardRelationship.PARENT, tags = ["optional"]),
-        CardReference(card_id = "micro_taper_week", relationship = CardRelationship.PARENT, tags = ["rhythm"]),
+        CardReference(card_id = "micro_002", relationship = CardRelationship.PARENT, tags = ["optional"]),
+        CardReference(card_id = "micro_009", relationship = CardRelationship.PARENT, tags = ["rhythm"]),
     ],
     session_family = "neuromuscular",
     typical_duration = "4-10 short efforts",
@@ -35,3 +36,4 @@ strides = SessionCard(
     execution_notes = ["Stop while the movement still feels smooth."],
     recovery_requirements = ["Low recovery cost if kept short."],
 )
+

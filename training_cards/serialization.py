@@ -61,6 +61,7 @@ def card_from_dict(data: dict[str, Any]) -> BaseTrainingCard:
     card_data = dict(data)
     card_type = CardType(card_data["card_type"])
 
+    card_data.setdefault("slug", card_data["id"].replace("_", "-"))
     card_data["card_type"] = card_type
     card_data["suitable_levels"] = [TrainingLevel(level) for level in card_data["suitable_levels"]]
     card_data["references"] = [
@@ -86,3 +87,4 @@ def card_from_dict(data: dict[str, Any]) -> BaseTrainingCard:
     card_class = CARD_CLASS_BY_TYPE[card_type]
 
     return card_class(**card_data)
+

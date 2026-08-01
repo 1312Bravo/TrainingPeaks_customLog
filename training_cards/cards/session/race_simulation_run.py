@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 race_simulation_run = SessionCard(
-    id = "session_race_simulation_run",
+    id = "session_012",
+    slug = "race-simulation-run",
     title = "Race Simulation Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,8 +21,8 @@ race_simulation_run = SessionCard(
     progression_rules = ["Progress specificity before total stress."],
     regression_rules = ["Shorten or simplify the rehearsal."],
     references = [
-        CardReference(card_id = "micro_race_practice_week", relationship = CardRelationship.PARENT, tags = ["key_session"]),
-        CardReference(card_id = "mezzo_race_practice_block", relationship = CardRelationship.PARENT, tags = ["core_session"]),
+        CardReference(card_id = "micro_008", relationship = CardRelationship.PARENT, tags = ["key_session"]),
+        CardReference(card_id = "mezzo_007", relationship = CardRelationship.PARENT, tags = ["core_session"]),
     ],
     session_family = "race_practice",
     typical_duration = "Varies by goal and athlete level",
@@ -35,3 +36,4 @@ race_simulation_run = SessionCard(
     execution_notes = ["Practice fueling, pacing, and equipment intentionally."],
     recovery_requirements = ["Plan recovery as if it were a major key session."],
 )
+

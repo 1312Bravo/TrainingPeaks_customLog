@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 recovery_week = MicroCard(
-    id = "micro_recovery_week",
+    id = "micro_001",
+    slug = "recovery-week",
     title = "Recovery Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,9 +21,9 @@ recovery_week = MicroCard(
     progression_rules = ["Return to normal training when easy movement feels normal."],
     regression_rules = ["Replace running with walking or rest if easy running is not restorative."],
     references = [
-        CardReference(card_id = "mezzo_recovery_block", relationship = CardRelationship.PARENT, tags = ["core_week"]),
-        CardReference(card_id = "session_recovery_run", relationship = CardRelationship.CHILD, tags = ["core_session"]),
-        CardReference(card_id = "session_easy_run", relationship = CardRelationship.CHILD, tags = ["optional"]),
+        CardReference(card_id = "mezzo_009", relationship = CardRelationship.PARENT, tags = ["core_week"]),
+        CardReference(card_id = "session_002", relationship = CardRelationship.CHILD, tags = ["core_session"]),
+        CardReference(card_id = "session_001", relationship = CardRelationship.CHILD, tags = ["optional"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["Mostly rest, recovery runs, or short easy runs.", "No demanding key workout."],

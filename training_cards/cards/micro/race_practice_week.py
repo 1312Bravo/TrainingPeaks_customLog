@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 race_practice_week = MicroCard(
-    id = "micro_race_practice_week",
+    id = "micro_008",
+    slug = "race-practice-week",
     title = "Race Practice Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,9 +21,9 @@ race_practice_week = MicroCard(
     progression_rules = ["Progress from simple practice to more specific rehearsal.", "Keep final rehearsals confidence-building."],
     regression_rules = ["Simplify practice if execution quality drops."],
     references = [
-        CardReference(card_id = "mezzo_race_practice_block", relationship = CardRelationship.PARENT, tags = ["core_week"]),
-        CardReference(card_id = "session_race_simulation_run", relationship = CardRelationship.CHILD, tags = ["key_session"]),
-        CardReference(card_id = "session_long_run", relationship = CardRelationship.CHILD, tags = ["option"]),
+        CardReference(card_id = "mezzo_007", relationship = CardRelationship.PARENT, tags = ["core_week"]),
+        CardReference(card_id = "session_012", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "session_003", relationship = CardRelationship.CHILD, tags = ["option"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["Easy support running.", "One specific practice session.", "Recovery afterward."],

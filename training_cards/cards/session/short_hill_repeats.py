@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 short_hill_repeats = SessionCard(
-    id = "session_short_hill_repeats",
+    id = "session_009",
+    slug = "short-hill-repeats",
     title = "Short Hill Repeats",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -19,7 +20,7 @@ short_hill_repeats = SessionCard(
     warning_signs = ["Tight calves or Achilles discomfort.", "Power drops quickly."],
     progression_rules = ["Add reps sparingly.", "Keep technique crisp."],
     regression_rules = ["Use strides on flat terrain if hill load is too much."],
-    references = [CardReference(card_id = "micro_strength_support_week", relationship = CardRelationship.PARENT, tags = ["option"])],
+    references = [CardReference(card_id = "micro_004", relationship = CardRelationship.PARENT, tags = ["option"])],
     session_family = "hill_power",
     typical_duration = "6-15 short repetitions",
     workout_parts = [
@@ -32,3 +33,4 @@ short_hill_repeats = SessionCard(
     execution_notes = ["Walk or jog easily back down."],
     recovery_requirements = ["Monitor calf and Achilles response."],
 )
+

@@ -92,7 +92,7 @@ Relationships should use `CardReference` instead of loose string lists. This kee
 
 ```python
 CardReference(
-    card_id = "mezzo_easy_volume_block",
+    card_id = "mezzo_001",
     relationship = CardRelationship.CHILD,
     tags = ["natural_fit", "low_intensity"],
 )
@@ -126,3 +126,4 @@ Each `SessionPart` should describe:
 - `terrain_notes`
 
 RPE uses a 1-10 scale. Durations should usually be adaptable ranges, not overly precise prescriptions.
+

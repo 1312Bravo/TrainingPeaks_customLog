@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 endurance_development_block = MezzoCard(
-    id = "mezzo_endurance_development_block",
+    id = "mezzo_002",
+    slug = "endurance-development-block",
     title = "Endurance Development Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.ALL],
@@ -57,11 +58,11 @@ endurance_development_block = MezzoCard(
         "Return to easy volume when endurance sessions feel too costly.",
     ],
     references = [
-        CardReference(card_id = "macro_base_development", relationship = CardRelationship.PARENT, tags = ["core_block"]),
-        CardReference(card_id = "macro_build_phase", relationship = CardRelationship.PARENT, tags = ["support_block"]),
-        CardReference(card_id = "mezzo_easy_volume_block", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
-        CardReference(card_id = "mezzo_long_endurance_block", relationship = CardRelationship.NEXT, tags = ["if_goal_demands"]),
-        CardReference(card_id = "micro_long_run_focus_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "macro_002", relationship = CardRelationship.PARENT, tags = ["core_block"]),
+        CardReference(card_id = "macro_003", relationship = CardRelationship.PARENT, tags = ["support_block"]),
+        CardReference(card_id = "mezzo_001", relationship = CardRelationship.PREVIOUS, tags = ["common_sequence"]),
+        CardReference(card_id = "mezzo_006", relationship = CardRelationship.NEXT, tags = ["if_goal_demands"]),
+        CardReference(card_id = "micro_006", relationship = CardRelationship.CHILD, tags = ["core_week"]),
     ],
     recommended_duration_weeks = "3-8",
     placement_guidance = [

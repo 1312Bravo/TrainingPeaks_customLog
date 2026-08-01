@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 long_run_focus_week = MicroCard(
-    id = "micro_long_run_focus_week",
+    id = "micro_006",
+    slug = "long-run-focus-week",
     title = "Long Run Focus Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -20,10 +21,10 @@ long_run_focus_week = MicroCard(
     progression_rules = ["Progress duration or specificity gradually.", "Practice fueling before the longest sessions."],
     regression_rules = ["Shorten or simplify the long run if recovery is poor."],
     references = [
-        CardReference(card_id = "mezzo_endurance_development_block", relationship = CardRelationship.PARENT, tags = ["core_week"]),
-        CardReference(card_id = "mezzo_long_endurance_block", relationship = CardRelationship.PARENT, tags = ["core_week"]),
-        CardReference(card_id = "mezzo_fueling_practice_block", relationship = CardRelationship.PARENT, tags = ["practice_context"]),
-        CardReference(card_id = "session_long_run", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "mezzo_002", relationship = CardRelationship.PARENT, tags = ["core_week"]),
+        CardReference(card_id = "mezzo_006", relationship = CardRelationship.PARENT, tags = ["core_week"]),
+        CardReference(card_id = "mezzo_008", relationship = CardRelationship.PARENT, tags = ["practice_context"]),
+        CardReference(card_id = "session_003", relationship = CardRelationship.CHILD, tags = ["key_session"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["Easy running early.", "Long run as main stress.", "Recovery afterward."],

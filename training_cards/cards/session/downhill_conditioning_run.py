@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 downhill_conditioning_run = SessionCard(
-    id = "session_downhill_conditioning_run",
+    id = "session_014",
+    slug = "downhill-conditioning-run",
     title = "Downhill Conditioning Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,8 +21,8 @@ downhill_conditioning_run = SessionCard(
     progression_rules = ["Progress exposure gradually.", "Separate hard downhill load from other major stressors."],
     regression_rules = ["Reduce descent length, grade, or technicality."],
     references = [
-        CardReference(card_id = "micro_strength_support_week", relationship = CardRelationship.PARENT, tags = ["trail_option"]),
-        CardReference(card_id = "micro_race_practice_week", relationship = CardRelationship.PARENT, tags = ["specificity"]),
+        CardReference(card_id = "micro_004", relationship = CardRelationship.PARENT, tags = ["trail_option"]),
+        CardReference(card_id = "micro_008", relationship = CardRelationship.PARENT, tags = ["specificity"]),
     ],
     session_family = "trail_specific",
     typical_duration = "Short controlled downhill segments within an easy run",
@@ -35,3 +36,4 @@ downhill_conditioning_run = SessionCard(
     execution_notes = ["Stop before coordination breaks down."],
     recovery_requirements = ["Plan easy running afterward and monitor soreness."],
 )
+

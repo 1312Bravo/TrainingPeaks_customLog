@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 steady_run = SessionCard(
-    id = "session_steady_run",
+    id = "session_005",
+    slug = "steady-run",
     title = "Steady Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.ALL],
@@ -19,7 +20,7 @@ steady_run = SessionCard(
     warning_signs = ["Easy days become stale.", "Steady pace drifts into strain."],
     progression_rules = ["Extend duration before increasing effort."],
     regression_rules = ["Convert to easy run if fatigue is present."],
-    references = [CardReference(card_id = "micro_aerobic_maintenance_week", relationship = CardRelationship.PARENT, tags = ["option"])],
+    references = [CardReference(card_id = "micro_002", relationship = CardRelationship.PARENT, tags = ["option"])],
     session_family = "steady",
     typical_duration = "30-90 minutes",
     workout_parts = [
@@ -31,3 +32,4 @@ steady_run = SessionCard(
     execution_notes = ["Keep the session repeatable."],
     recovery_requirements = ["Usually modest if controlled."],
 )
+

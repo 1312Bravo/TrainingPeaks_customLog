@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 long_endurance_block = MezzoCard(
-    id = "mezzo_long_endurance_block",
+    id = "mezzo_006",
+    slug = "long-endurance-block",
     title = "Long Endurance Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.ALL],
@@ -58,11 +59,11 @@ long_endurance_block = MezzoCard(
         "Reduce vertical gain or downhill exposure if mechanical stress dominates.",
     ],
     references = [
-        CardReference(card_id = "macro_base_development", relationship = CardRelationship.PARENT, tags = ["if_endurance_limiter"]),
-        CardReference(card_id = "macro_race_specific_preparation", relationship = CardRelationship.PARENT, tags = ["specificity"]),
-        CardReference(card_id = "mezzo_fueling_practice_block", relationship = CardRelationship.SUPPORT, tags = ["execution"]),
-        CardReference(card_id = "micro_long_run_focus_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
-        CardReference(card_id = "micro_back_to_back_focus_week", relationship = CardRelationship.CHILD, tags = ["advanced_option"]),
+        CardReference(card_id = "macro_002", relationship = CardRelationship.PARENT, tags = ["if_endurance_limiter"]),
+        CardReference(card_id = "macro_004", relationship = CardRelationship.PARENT, tags = ["specificity"]),
+        CardReference(card_id = "mezzo_008", relationship = CardRelationship.SUPPORT, tags = ["execution"]),
+        CardReference(card_id = "micro_006", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "micro_007", relationship = CardRelationship.CHILD, tags = ["advanced_option"]),
     ],
     recommended_duration_weeks = "3-8",
     placement_guidance = [

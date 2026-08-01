@@ -12,6 +12,7 @@ from .references import CardReference
 @dataclass(slots=True)
 class BaseTrainingCard:
     id: str
+    slug: str
     title: str
     card_type: CardType
     suitable_levels: list[TrainingLevel]
@@ -36,6 +37,8 @@ class BaseTrainingCard:
     def __post_init__(self) -> None:
         if not self.id.strip():
             raise ValueError("Training card id cannot be empty.")
+        if not self.slug.strip():
+            raise ValueError("Training card slug cannot be empty.")
         if not self.title.strip():
             raise ValueError("Training card title cannot be empty.")
         if not self.suitable_levels:
@@ -44,3 +47,4 @@ class BaseTrainingCard:
             raise ValueError("Training card summary cannot be empty.")
         if not self.purpose.strip():
             raise ValueError("Training card purpose cannot be empty.")
+

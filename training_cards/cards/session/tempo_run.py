@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, SessionCard, SessionPart, TrainingLevel
 
 tempo_run = SessionCard(
-    id = "session_tempo_run",
+    id = "session_006",
+    slug = "tempo-run",
     title = "Tempo Run",
     card_type = CardType.SESSION,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -19,7 +20,7 @@ tempo_run = SessionCard(
     warning_signs = ["Unable to sustain control.", "Excessive recovery cost."],
     progression_rules = ["Increase duration before intensity."],
     regression_rules = ["Use shorter threshold intervals instead."],
-    references = [CardReference(card_id = "micro_intensity_support_week", relationship = CardRelationship.PARENT, tags = ["option"])],
+    references = [CardReference(card_id = "micro_005", relationship = CardRelationship.PARENT, tags = ["option"])],
     session_family = "threshold",
     typical_duration = "20-60 minutes of quality work, adjusted by level",
     workout_parts = [
@@ -31,3 +32,4 @@ tempo_run = SessionCard(
     execution_notes = ["Finish with the sense that one more small segment would be possible."],
     recovery_requirements = ["Plan easy running afterward."],
 )
+

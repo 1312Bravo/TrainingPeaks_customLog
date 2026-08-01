@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 strength_support_week = MicroCard(
-    id = "micro_strength_support_week",
+    id = "micro_004",
+    slug = "strength-support-week",
     title = "Strength Support Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,9 +21,9 @@ strength_support_week = MicroCard(
     progression_rules = ["Progress repetitions or duration before intensity.", "Keep the next day easy."],
     regression_rules = ["Reduce hill or gym load if soreness changes running mechanics."],
     references = [
-        CardReference(card_id = "mezzo_strength_endurance_block", relationship = CardRelationship.PARENT, tags = ["core_week"]),
-        CardReference(card_id = "session_strength_endurance_hills", relationship = CardRelationship.CHILD, tags = ["key_session"]),
-        CardReference(card_id = "session_easy_run", relationship = CardRelationship.CHILD, tags = ["support_session"]),
+        CardReference(card_id = "mezzo_003", relationship = CardRelationship.PARENT, tags = ["core_week"]),
+        CardReference(card_id = "session_010", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "session_001", relationship = CardRelationship.CHILD, tags = ["support_session"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["One strength-focused key session.", "Easy running before and after.", "Optional light strength support."],

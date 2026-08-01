@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 fueling_practice_block = MezzoCard(
-    id = "mezzo_fueling_practice_block",
+    id = "mezzo_008",
+    slug = "fueling-practice-block",
     title = "Fueling Practice Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.ALL],
@@ -57,11 +58,11 @@ fueling_practice_block = MezzoCard(
         "Separate fueling practice from very hard sessions until tolerance improves.",
     ],
     references = [
-        CardReference(card_id = "macro_race_specific_preparation", relationship = CardRelationship.PARENT, tags = ["support_block"]),
-        CardReference(card_id = "mezzo_long_endurance_block", relationship = CardRelationship.SUPPORT, tags = ["long_efforts"]),
-        CardReference(card_id = "mezzo_race_practice_block", relationship = CardRelationship.SUPPORT, tags = ["race_execution"]),
-        CardReference(card_id = "micro_long_run_focus_week", relationship = CardRelationship.CHILD, tags = ["practice_context"]),
-        CardReference(card_id = "session_long_run", relationship = CardRelationship.CHILD, tags = ["practice_session"]),
+        CardReference(card_id = "macro_004", relationship = CardRelationship.PARENT, tags = ["support_block"]),
+        CardReference(card_id = "mezzo_006", relationship = CardRelationship.SUPPORT, tags = ["long_efforts"]),
+        CardReference(card_id = "mezzo_007", relationship = CardRelationship.SUPPORT, tags = ["race_execution"]),
+        CardReference(card_id = "micro_006", relationship = CardRelationship.CHILD, tags = ["practice_context"]),
+        CardReference(card_id = "session_003", relationship = CardRelationship.CHILD, tags = ["practice_session"]),
     ],
     recommended_duration_weeks = "2-8",
     placement_guidance = [

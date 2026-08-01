@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 threshold_development_block = MezzoCard(
-    id = "mezzo_threshold_development_block",
+    id = "mezzo_004",
+    slug = "threshold-development-block",
     title = "Threshold Development Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -57,11 +58,11 @@ threshold_development_block = MezzoCard(
         "Return to endurance development if fatigue persists.",
     ],
     references = [
-        CardReference(card_id = "macro_build_phase", relationship = CardRelationship.PARENT, tags = ["core_block"]),
-        CardReference(card_id = "macro_race_specific_preparation", relationship = CardRelationship.PARENT, tags = ["if_race_relevant"]),
-        CardReference(card_id = "mezzo_aerobic_power_block", relationship = CardRelationship.NEXT, tags = ["possible_progression"]),
-        CardReference(card_id = "micro_intensity_support_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
-        CardReference(card_id = "session_threshold_intervals", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "macro_003", relationship = CardRelationship.PARENT, tags = ["core_block"]),
+        CardReference(card_id = "macro_004", relationship = CardRelationship.PARENT, tags = ["if_race_relevant"]),
+        CardReference(card_id = "mezzo_005", relationship = CardRelationship.NEXT, tags = ["possible_progression"]),
+        CardReference(card_id = "micro_005", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "session_007", relationship = CardRelationship.CHILD, tags = ["key_session"]),
     ],
     recommended_duration_weeks = "3-6",
     placement_guidance = [

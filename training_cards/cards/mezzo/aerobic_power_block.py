@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 aerobic_power_block = MezzoCard(
-    id = "mezzo_aerobic_power_block",
+    id = "mezzo_005",
+    slug = "aerobic-power-block",
     title = "Aerobic Power Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -58,10 +59,10 @@ aerobic_power_block = MezzoCard(
         "Switch to threshold or endurance work if high intensity is not being absorbed.",
     ],
     references = [
-        CardReference(card_id = "macro_build_phase", relationship = CardRelationship.PARENT, tags = ["core_block"]),
-        CardReference(card_id = "mezzo_threshold_development_block", relationship = CardRelationship.PREVIOUS, tags = ["possible_sequence"]),
-        CardReference(card_id = "micro_intensity_support_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
-        CardReference(card_id = "session_aerobic_power_intervals", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "macro_003", relationship = CardRelationship.PARENT, tags = ["core_block"]),
+        CardReference(card_id = "mezzo_004", relationship = CardRelationship.PREVIOUS, tags = ["possible_sequence"]),
+        CardReference(card_id = "micro_005", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "session_008", relationship = CardRelationship.CHILD, tags = ["key_session"]),
     ],
     recommended_duration_weeks = "2-5",
     placement_guidance = [

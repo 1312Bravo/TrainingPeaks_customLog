@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 easy_volume_block = MezzoCard(
-    id = "mezzo_easy_volume_block",
+    id = "mezzo_001",
+    slug = "easy-volume-block",
     title = "Easy Volume Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.ALL],
@@ -58,11 +59,11 @@ easy_volume_block = MezzoCard(
         "Use flatter routes if trail load is driving fatigue.",
     ],
     references = [
-        CardReference(card_id = "macro_return_to_consistency", relationship = CardRelationship.PARENT, tags = ["starter_block"]),
-        CardReference(card_id = "macro_base_development", relationship = CardRelationship.PARENT, tags = ["core_block"]),
-        CardReference(card_id = "mezzo_endurance_development_block", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
-        CardReference(card_id = "micro_volume_progression_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
-        CardReference(card_id = "micro_recovery_week", relationship = CardRelationship.CHILD, tags = ["deload"]),
+        CardReference(card_id = "macro_001", relationship = CardRelationship.PARENT, tags = ["starter_block"]),
+        CardReference(card_id = "macro_002", relationship = CardRelationship.PARENT, tags = ["core_block"]),
+        CardReference(card_id = "mezzo_002", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
+        CardReference(card_id = "micro_003", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "micro_001", relationship = CardRelationship.CHILD, tags = ["deload"]),
     ],
     recommended_duration_weeks = "2-6",
     placement_guidance = [

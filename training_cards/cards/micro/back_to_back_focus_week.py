@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MicroCard, TrainingLevel
 
 back_to_back_focus_week = MicroCard(
-    id = "micro_back_to_back_focus_week",
+    id = "micro_007",
+    slug = "back-to-back-focus-week",
     title = "Back-To-Back Focus Week",
     card_type = CardType.MICRO,
     suitable_levels = [TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -20,9 +21,9 @@ back_to_back_focus_week = MicroCard(
     progression_rules = ["Progress the second day gradually.", "Keep both days controlled."],
     regression_rules = ["Return to a normal long-run week if recovery is not reliable."],
     references = [
-        CardReference(card_id = "mezzo_long_endurance_block", relationship = CardRelationship.PARENT, tags = ["advanced_option"]),
-        CardReference(card_id = "session_long_run", relationship = CardRelationship.CHILD, tags = ["key_session"]),
-        CardReference(card_id = "session_easy_run", relationship = CardRelationship.CHILD, tags = ["support_session"]),
+        CardReference(card_id = "mezzo_006", relationship = CardRelationship.PARENT, tags = ["advanced_option"]),
+        CardReference(card_id = "session_003", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "session_001", relationship = CardRelationship.CHILD, tags = ["support_session"]),
     ],
     recommended_duration_days = "7",
     week_structure = ["Easy preparation.", "Two longer controlled runs close together.", "Recovery afterward."],

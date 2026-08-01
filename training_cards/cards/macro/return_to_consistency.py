@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MacroCard, TrainingLevel
 
 return_to_consistency = MacroCard(
-    id = "macro_return_to_consistency",
+    id = "macro_001",
+    slug = "return-to-consistency",
     title = "Return To Consistency",
     card_type = CardType.MACRO,
     suitable_levels = [TrainingLevel.ALL],
@@ -62,9 +63,9 @@ return_to_consistency = MacroCard(
         "Return to walk-run or cross-training if continuous running is not yet tolerated.",
     ],
     references = [
-        CardReference(card_id = "macro_base_development", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
-        CardReference(card_id = "mezzo_easy_volume_block", relationship = CardRelationship.CHILD, tags = ["starter_block"]),
-        CardReference(card_id = "mezzo_recovery_block", relationship = CardRelationship.CHILD, tags = ["low_stress"]),
+        CardReference(card_id = "macro_002", relationship = CardRelationship.NEXT, tags = ["natural_sequence"]),
+        CardReference(card_id = "mezzo_001", relationship = CardRelationship.CHILD, tags = ["starter_block"]),
+        CardReference(card_id = "mezzo_009", relationship = CardRelationship.CHILD, tags = ["low_stress"]),
     ],
     recommended_duration_weeks = "3-8",
     timing_guidance = [

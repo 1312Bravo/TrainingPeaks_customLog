@@ -1,7 +1,8 @@
 from training_cards.schemas import CardRelationship, CardReference, CardType, MezzoCard, TrainingLevel
 
 strength_endurance_block = MezzoCard(
-    id = "mezzo_strength_endurance_block",
+    id = "mezzo_003",
+    slug = "strength-endurance-block",
     title = "Strength Endurance Block",
     card_type = CardType.MEZZO,
     suitable_levels = [TrainingLevel.INTERMEDIATE, TrainingLevel.ADVANCED, TrainingLevel.ELITE],
@@ -57,11 +58,11 @@ strength_endurance_block = MezzoCard(
         "Return to endurance development if muscular soreness dominates the week.",
     ],
     references = [
-        CardReference(card_id = "macro_build_phase", relationship = CardRelationship.PARENT, tags = ["core_block"]),
-        CardReference(card_id = "macro_race_specific_preparation", relationship = CardRelationship.PARENT, tags = ["if_goal_demands"]),
-        CardReference(card_id = "mezzo_threshold_development_block", relationship = CardRelationship.ALTERNATIVE, tags = ["different_stress"]),
-        CardReference(card_id = "micro_strength_support_week", relationship = CardRelationship.CHILD, tags = ["core_week"]),
-        CardReference(card_id = "session_strength_endurance_hills", relationship = CardRelationship.CHILD, tags = ["key_session"]),
+        CardReference(card_id = "macro_003", relationship = CardRelationship.PARENT, tags = ["core_block"]),
+        CardReference(card_id = "macro_004", relationship = CardRelationship.PARENT, tags = ["if_goal_demands"]),
+        CardReference(card_id = "mezzo_004", relationship = CardRelationship.ALTERNATIVE, tags = ["different_stress"]),
+        CardReference(card_id = "micro_004", relationship = CardRelationship.CHILD, tags = ["core_week"]),
+        CardReference(card_id = "session_010", relationship = CardRelationship.CHILD, tags = ["key_session"]),
     ],
     recommended_duration_weeks = "3-6",
     placement_guidance = [
